@@ -1,0 +1,43 @@
+# Python
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+*.swp
+*.bak
+
+# Django
+db.sqlite3
+*.log
+
+# Environnements virtuels
+.env
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# VS Code
+.vscode/
+
+# Fichiers de configuration/déploiement
+*.sqlite3
+*.pot
+*.mo
+
+# Static/media files
+/static/
+media/
+staticfiles/
+static/
+media/
+
+# Mac/Linux/Windows
+.DS_Store
+Thumbs.db
+
+# Migrations
+*/migrations/*.pyc
+*/migrations/__pycache__/
