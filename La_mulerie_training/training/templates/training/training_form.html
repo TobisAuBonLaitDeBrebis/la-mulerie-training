@@ -10,7 +10,7 @@
         {% csrf_token %}
         {{ form.as_p }}
         <button type="submit" class="btn btn-success">Enregistrer</button>
-        <a href="{% url 'horse_detail' horse.pk %}" class="btn btn-secondary">Retour</a>
+        <a href="{% url 'home'%}" class="btn btn-secondary">Retour</a>
     </form>
 </body>
 </html>

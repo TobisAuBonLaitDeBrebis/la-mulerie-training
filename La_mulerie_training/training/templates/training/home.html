@@ -1,0 +1,81 @@
+{% extends 'la_mulerie_training/base.html' %}
+
+{% block title %}Accueil - Mes activités{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Mon tableau de bord</h1>
+
+<!-- Onglets Bootstrap -->
+<ul class="nav nav-tabs mb-3" id="dashboardTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="trainings-tab" data-bs-toggle="tab" data-bs-target="#trainings" type="button" role="tab" aria-controls="trainings" aria-selected="true">
+            Mes entraînements
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="horses-tab" data-bs-toggle="tab" data-bs-target="#horses" type="button" role="tab" aria-controls="horses" aria-selected="false">
+            Mes chevaux
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="dashboardTabsContent">
+    <!-- Tab Entraînements -->
+    <div class="tab-pane fade show active" id="trainings" role="tabpanel" aria-labelledby="trainings-tab">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>Mes entraînements</h2>
+            <a href="{% url 'training_add_global' %}" class="btn btn-sm btn-primary">+ Ajouter</a>
+        </div>
+        <ul class="list-group">
+            {% for session in sessions %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ session.date }}</strong> — 
+                        <a href="{% url 'horse_detail' session.cheval.pk %}">{{ session.cheval.nom }}</a> :
+                        {{ session.type_seance }} ({{ session.duree }} min)
+                        {% if session.notes %}
+                            <br><small class="text-muted">{{ session.notes }}</small>
+                        {% endif %}
+                    </div>
+                    <form method="post" action="{% url 'training_delete' session.pk %}" style="margin:0;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Supprimer cet entraînement ?');">Supprimer</button>
+                    </form>
+                </li>
+            {% empty %}
+                <li class="list-group-item">Aucun entraînement enregistré.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Tab Chevaux -->
+    <div class="tab-pane fade" id="horses" role="tabpanel" aria-labelledby="horses-tab">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>Mes chevaux</h2>
+            <a href="{% url 'horse_add' %}" class="btn btn-sm btn-primary">+ Ajouter</a>
+        </div>
+        <ul class="list-group">
+            {% for horse in horses %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <a href="{% url 'horse_detail' horse.pk %}">{{ horse.nom }}</a>
+                        {% if horse.age %}
+                            <span class="text-muted">({{ horse.age }} ans)</span>
+                        {% endif %}
+                    </div>
+                    <form method="post" action="{% url 'horse_delete' horse.pk %}" style="margin:0;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Supprimer ce cheval ?');">Supprimer</button>
+                    </form>
+                </li>
+            {% empty %}
+                <li class="list-group-item">Aucun cheval enregistré.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}
