@@ -9,7 +9,7 @@ from django.contrib.auth.decorators import login_required
 
 @login_required
 def horse_detail(request, pk):
-    horse = get_object_or_404(Horse, pk=pk)
+    horse = get_object_or_404(Horse, pk=pk ,proprietaire=request.user.pk)
     trainings = horse.trainings.all()
     return render(request, 'training/horse_detail.html', {'horse': horse, 'trainings': trainings})
 
