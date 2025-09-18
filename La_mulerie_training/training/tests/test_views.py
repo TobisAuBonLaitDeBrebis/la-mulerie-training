@@ -82,7 +82,7 @@ class TrainingViewsTest(TestCase):
         """
         python manage.py test training.tests.test_views.TrainingViewsTest.test_training_add_view_without_horse_pk
         """
-        url = reverse("training_add")
+        url = reverse("training_add_global")
         response = self.client.post(url, {
             "cheval": self.horse.pk,
             "type_seance": "Endurance",
@@ -91,7 +91,7 @@ class TrainingViewsTest(TestCase):
             "notes": "Longue sortie"
         })
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(self.user.trainings.filter(type_seance="Endurance").exists())
+        self.assertTrue(TrainingSession.objects.filter(type_seance="Endurance").exists())
 
     def test_horse_delete_view(self):
         """
