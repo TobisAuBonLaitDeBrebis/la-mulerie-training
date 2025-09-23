@@ -26,7 +26,15 @@ SECRET_KEY = 'django-insecure--105r3m(#+xkab%3oz@(^*oytp7rg618^48j&ct(z+61@45@3w
 DEBUG = True
 
 ALLOWED_HOSTS = []
+NPM_BIN_PATH = "C:/Program Files/nodejs/npm.cmd"
+NPM_BIN_PATH = "C:/Program Files/nodejs/npm.cmd"
 
+
+TAILWIND_APP_NAME = 'theme'
+
+INTERNAL_IPS = [
+    "127.0.0.1",
+]
 
 # Application definition
 
@@ -37,8 +45,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'la_mulerie_training',
     'training',
     'accounts',
+    'tailwind',
+    'theme',
 ]
 
 MIDDLEWARE = [
@@ -118,6 +129,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'static'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

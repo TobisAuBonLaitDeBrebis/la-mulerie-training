@@ -31,6 +31,8 @@ class TrainingSession(models.Model):
     type_seance = models.CharField(max_length=100)
     duree = models.PositiveIntegerField(help_text="Durée en minutes")
     notes = models.TextField(blank=True, null=True)
+    cout = models.DecimalField(max_digits=7, decimal_places=2, blank=True, null=True, help_text="Coût de l'entraînement en euros")
+
 
     def __str__(self):
         return f"{self.cheval.nom} - {self.date} - {self.type_seance}"

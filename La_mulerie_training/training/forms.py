@@ -10,4 +10,4 @@ class TrainingSessionForm(forms.ModelForm):
                 
     class Meta:
         model = TrainingSession
-        fields = ['date', 'type_seance', 'duree', 'notes', 'cheval']  # Ne pas inclure 'cheval' ni 'cavalier'
+        fields = ['date', 'type_seance', 'duree', 'notes', 'cheval','cout']  # Ne pas inclure 'cheval' ni 'cavalier'
