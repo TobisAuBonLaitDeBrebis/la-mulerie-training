@@ -8,5 +8,6 @@ urlpatterns = [
     path('cheval/<int:pk>/supprimer/', views.horse_delete, name='horse_delete'),
     path('cheval/<int:horse_pk>/entrainement/ajouter/', views.training_add, name='training_add'),
     path('entrainement/ajouter/', views.training_add, name='training_add_global'),
+    path('entrainement/<int:pk>/ajouter/', views.training_add, name='training_edit'),
     path('entrainement/<int:pk>/supprimer/', views.training_delete, name='training_delete'),
 ]

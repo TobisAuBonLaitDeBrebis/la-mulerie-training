@@ -61,6 +61,31 @@ def training_add(request, horse_pk=None):
     return render(request, 'training/training_form.html', {'form': form, 'horse': horse})
 
 @login_required
+def training_add(request, training_pk=None):
+    training = None
+    user_horses = Horse.objects.filter(proprietaire=request.user)
+    if training_pk:
+        training = get_object_or_404(TrainingSession, pk=training_pk, cavalier=request.user)
+
+    if request.method == 'POST':
+        form = TrainingSessionForm(request.POST, instance=training)
+        # Filtre le champ cheval si pas de horse_pk
+        if not training:
+            form.fields['cheval'].queryset = user_horses
+        if form.is_valid():
+            training = form.save(commit=False)
+            if not training.cheval or training.cheval.proprietaire != request.user:
+                return redirect('home')  # Sécurité supplémentaire
+            training.cavalier = request.user
+            training.save()
+            return redirect('home')
+    else:
+        form = TrainingSessionForm(instance=training)
+        if not training:
+            form.fields['cheval'].queryset = user_horses
+    return render(request, 'training/training_form.html', {'form': form, 'training': training})
+
+@login_required
 def horse_delete(request, pk):
     horse = get_object_or_404(Horse, pk=pk, proprietaire=request.user)
     horse.delete()

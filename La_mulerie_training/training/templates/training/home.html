@@ -4,67 +4,35 @@
 
 {% block content %}
 <div class="container mx-auto mt-8">
-    <h1 class="text-3xl font-bold mb-6 text-center">Mon tableau de bord</h1>
 
-    <!-- Onglets -->
-    <div class="tabs tabs-boxed mb-6 flex justify-center">
-        <a href="#trainings" class="tab tab-lg tab-active" onclick="switchTab(event, 'trainings')">Mes entraînements</a>
-        <a href="#horses" class="tab tab-lg" onclick="switchTab(event, 'horses')">Mes chevaux</a>
-    </div>
-
-    <!-- Contenu Onglets -->
-    <div id="trainings" class="tab-content block">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-semibold">Mes entraînements</h2>
-            <a href="{% url 'training_add_global' %}" class="btn btn-sm btn-primary">+ Ajouter</a>
+    <div class="grid grid-cols-12 gap-6">
+        <!-- Premier tiers : User Card -->
+        <div class="col-span-12 md:col-span-3">
+            {% include 'la_mulerie_training/components/user_card.html' %}
         </div>
 
-        <ul class="divide-y divide-gray-200 border rounded-lg">
-            {% for session in sessions %}
-                <li class="flex justify-between items-center p-4">
-                    <div>
-                        <strong>{{ session.date }}</strong> — 
-                        <a href="{% url 'horse_detail' session.cheval.pk %}" class="text-blue-600 hover:underline">{{ session.cheval.nom }}</a> :
-                        {{ session.type_seance }} ({{ session.duree }} min)
-                        {% if session.notes %}
-                            <div class="text-gray text-sm">{{ session.notes }}</div>
-                        {% endif %}
-                    </div>
-                    <form method="post" action="{% url 'training_delete' session.pk %}">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-error" onclick="return confirm('Supprimer cet entraînement ?');">Supprimer</button>
-                    </form>
-                </li>
-            {% empty %}
-                <li class="p-4 text-gray-700">Aucun entraînement enregistré.</li>
-            {% endfor %}
-        </ul>
-    </div>
+        <!-- Deuxième tiers : Contenu principal -->
+        <div class="col-span-12 md:col-span-6">
+         
+            <div class="flex justify-center mb-6">
+                <a href="{% url 'training_add_global' %}" class="px-4 py-2 bg-orange text-white font-semibold rounded hover:bg-terre">
+                Ajouter un entraînement
+                </a>
+            </div>
 
-    <div id="horses" class="tab-content hidden">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-semibold">Mes chevaux</h2>
-            <a href="{% url 'horse_add' %}" class="btn btn-sm btn-primary">+ Ajouter</a>
+            <div class="space-y-4">
+                {% for session in sessions %}
+                    {% include 'training/components/training_card.html' with session=session %}
+                {% empty %}
+                    <p class="text-center text-gray-700">Aucun entraînement enregistré.</p>
+                {% endfor %}
+            </div>
         </div>
 
-        <ul class="divide-y divide-gray-200 border rounded-lg">
-            {% for horse in horses %}
-                <li class="flex justify-between items-center p-4">
-                    <div>
-                        <a href="{% url 'horse_detail' horse.pk %}" class="text-blue-600 hover:underline">{{ horse.nom }}</a>
-                        {% if horse.age %}
-                            <span class="text-gray-700">({{ horse.age }} ans)</span>
-                        {% endif %}
-                    </div>
-                    <form method="post" action="{% url 'horse_delete' horse.pk %}">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-error" onclick="return confirm('Supprimer ce cheval ?');">Supprimer</button>
-                    </form>
-                </li>
-            {% empty %}
-                <li class="p-4 text-gray-700">Aucun cheval enregistré.</li>
-            {% endfor %}
-        </ul>
+        <!-- Troisième tiers : vide pour l'instant -->
+        <div class="col-span-12 md:col-span-3">
+            <!-- Espace vide -->
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -73,11 +41,8 @@
 <script>
 function switchTab(event, tabId) {
     event.preventDefault();
-    // Masquer tous les contenus
     document.querySelectorAll('.tab-content').forEach(tc => tc.classList.add('hidden'));
-    // Retirer l'active sur tous les onglets
     document.querySelectorAll('.tabs a').forEach(t => t.classList.remove('tab-active'));
-    // Afficher le bon onglet
     document.getElementById(tabId).classList.remove('hidden');
     event.currentTarget.classList.add('tab-active');
 }

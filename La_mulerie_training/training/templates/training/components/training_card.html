@@ -1,0 +1,33 @@
+<div class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden mb-4">
+    <div class="p-4">
+        <!-- En-tête : cheval + date -->
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="text-lg font-bold text-muletier">{{ session.cheval.nom }}</h3>
+            <span class="text-gray-700 text-sm">{{ session.date }}</span>
+        </div>
+
+        <!-- Type de séance et durée -->
+        <p class="text-muletier font-medium">
+            {{ session.type_seance }} - {{ session.duree }} min
+        </p>
+
+        <!-- Notes -->
+        {% if session.notes %}
+        <p class="mt-2 text-gray-800 text-sm italic">{{ session.notes }}</p>
+        {% endif %}
+
+        <!-- Actions -->
+        <div class="mt-4 flex justify-end space-x-2">
+            <a href="{% url 'training_edit' session.pk %}" 
+               class="px-3 py-1 bg-orange text-white rounded hover:bg-terre">
+               ✏️ Modifier
+            </a>
+            <form method="post" action="{% url 'training_delete' session.pk %}" onsubmit="return confirm('Supprimer cet entraînement ?');">
+                {% csrf_token %}
+                <button type="submit" class="px-3 py-1 bg-brique text-white rounded hover:bg-terre">
+                    🗑 Supprimer
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

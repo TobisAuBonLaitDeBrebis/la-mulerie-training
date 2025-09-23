@@ -1,0 +1,30 @@
+<div class="bg-white rounded-xl shadow-lg p-6 text-black">
+    <!-- Avatar + Nom -->
+    <div class="flex items-center space-x-4 mb-4">
+        {% if user.profile.avatar %}
+            <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}" class="w-16 h-16 rounded-full object-cover border border-gray-300">
+        {% else %}
+            <div class="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-xl font-bold">
+                {{ user.username|slice:":1"|upper }}
+            </div>
+        {% endif %}
+        <div>
+            <h2 class="text-xl font-bold">{{ user.username }}</h2>
+            <p class="text-sm text-gray-600">{{ user.email }}</p>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 gap-4 text-center">
+        <div>
+            <div class="font-bold text-lg">{{ user.horses.count }}</div>
+            <div class="text-sm text-gray-700">Chevaux</div>
+            
+        </div>
+        <div>
+            <div class="font-bold text-lg">{{ user.trainings.count }}</div>
+            <div class="text-sm text-gray-700">Entraînements</div>
+        </div>
+        <!-- Tu peux rajouter d'autres stats ici -->
+    </div>
+</div>
