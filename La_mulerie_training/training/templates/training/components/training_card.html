@@ -2,7 +2,9 @@
     <div class="p-4">
         <!-- En-tête : cheval + date -->
         <div class="flex justify-between items-center mb-2">
-            <h3 class="text-lg font-bold text-muletier">{{ session.cheval.nom }}</h3>
+            <h3 class="text-lg font-bold text-muletier">
+                <a href="{% url 'horse_detail' session.cheval.pk %}" class="link-primary"> {{ session.cheval.nom }}</a>
+            </h3>
             <span class="text-gray-700 text-sm">{{ session.date }}</span>
         </div>
 
@@ -18,16 +20,8 @@
 
         <!-- Actions -->
         <div class="mt-4 flex justify-end space-x-2">
-            <a href="{% url 'training_edit' session.pk %}" 
-               class="px-3 py-1 bg-orange text-white rounded hover:bg-terre">
-               ✏️ Modifier
-            </a>
-            <form method="post" action="{% url 'training_delete' session.pk %}" onsubmit="return confirm('Supprimer cet entraînement ?');">
-                {% csrf_token %}
-                <button type="submit" class="px-3 py-1 bg-brique text-white rounded hover:bg-terre">
-                    🗑 Supprimer
-                </button>
-            </form>
+          <a href="{% url 'training_detail' session.pk %}" class="link-primary" > more </a>
+        </form>
         </div>
     </div>
 </div>

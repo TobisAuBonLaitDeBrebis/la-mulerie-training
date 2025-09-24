@@ -4,7 +4,7 @@ from .models import Horse, TrainingSession
 class HorseForm(forms.ModelForm):
     class Meta:
         model = Horse
-        fields = ['nom', 'race', 'age']
+        fields = ['nom', 'race', 'birth_date']
 
 class TrainingSessionForm(forms.ModelForm):
                 

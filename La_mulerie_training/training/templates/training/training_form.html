@@ -1,46 +1,59 @@
 {% extends 'la_mulerie_training/base.html' %}
-{% load form_tags %}
+{% load templatetags.form_tags %}
 
 {% block content %}
-<div class="max-w-lg mx-auto bg-white shadow rounded-lg p-6 mt-6">
-    <h2 class="text-3xl font-bold mb-6 text-center text-gray-800">Nouvel entraînement 🏇</h2>
+<div class="max-w-xl mx-auto  rounded-2xl shadow-lg p-8 mt-10">
+    <h2 class="text-3xl font-bold mb-6 text-center text-muletier">Formulaire entraînement</h2>
 
-    <form method="post">
+    <form method="post" class="space-y-5">
         {% csrf_token %}
 
-        <div class="mb-4">
-            <label for="id_cheval" class="block mb-1 font-medium">Cheval</label>
-            {{ form.cheval|add_class:"select select-bordered w-full" }}
+        <!-- Cheval -->
+        <div>
+            <label for="id_cheval" class="block mb-1 font-semibold text-muletier">Cheval</label>
+            {{ form.cheval|add_class:"select select-bordered w-full bg-white border-gray-300" }}
         </div>
 
-        <div class="mb-4">
-            <label for="id_type_seance" class="block mb-1 font-medium">Type de séance</label>
-            {{ form.type_seance|add_class:"input input-bordered w-full" }}
+        <!-- Type de séance -->
+        <div>
+            <label for="id_type_seance" class="block mb-1 font-semibold text-muletier">Type de séance</label>
+            {{ form.type_seance|add_class:"input input-bordered w-full bg-white border-gray-300" }}
         </div>
 
-        <div class="mb-4">
-            <label for="id_duree" class="block mb-1 font-medium">Durée (minutes)</label>
-            {{ form.duree|add_class:"input input-bordered w-full" }}
+        <!-- Durée -->
+        <div>
+            <label for="id_duree" class="block mb-1 font-semibold text-muletier">Durée (minutes)</label>
+            {{ form.duree|add_class:"input input-bordered w-full bg-white border-gray-300" }}
         </div>
 
-        <div class="mb-4">
-            <label for="id_date" class="block mb-1 font-medium">Date</label>
-            {{ form.date|add_class:"input input-bordered w-full" }}
+        <!-- Date -->
+        <div>
+            <label for="id_date" class="block mb-1 font-semibold text-muletier">Date</label>
+            {{ form.date|add_class:"input input-bordered w-full bg-white border-gray-300" }}
         </div>
 
-        <div class="mb-4">
-            <label for="id_notes" class="block mb-1 font-medium">Notes</label>
-            {{ form.notes|add_class:"textarea textarea-bordered w-full" }}
+        <!-- Notes -->
+        <div>
+            <label for="id_notes" class="block mb-1 font-semibold text-muletier">Notes</label>
+            {{ form.notes|add_class:"textarea textarea-bordered w-full bg-white border-gray-300" }}
         </div>
 
-        <div class="mb-4">
-            <label for="id_cout" class="block mb-1 font-medium">Coût (€)</label>
-            {{ form.cout|add_class:"input input-bordered w-full" }}
+        <!-- Coût -->
+        <div>
+            <label for="id_cout" class="block mb-1 font-semibold text-muletier">Coût (€)</label>
+            {{ form.cout|add_class:"input input-bordered w-full bg-white border-gray-300" }}
         </div>
 
-        <div class="flex justify-between mt-6">
-            <a href="{% url 'home' %}" class="btn btn-outline">Retour</a>
-            <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
+        <!-- Boutons -->
+        <div class="flex justify-between items-center pt-4">
+            <a href="{% url 'home_training' %}" 
+               class="px-4 py-2 rounded-lg bg-orange text-white font-semibold hover:bg-orange-600 transition">
+               ← Retour
+            </a>
+            <button type="submit" 
+                    class="px-4 py-2 rounded-lg bg-orange text-white font-semibold hover:bg-orange-600 transition">
+                Enregistrer
+            </button>
         </div>
     </form>
 </div>

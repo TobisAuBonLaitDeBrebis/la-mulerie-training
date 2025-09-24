@@ -1,29 +1,58 @@
+{% extends 'la_mulerie_training/base.html' %}
+{% load templatetags.form_tags %}
 
+{% block title %}Fiche du cheval - {{ horse.nom }}{% endblock %}
 
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Fiche du cheval</title>
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-</head>
-<body class="container">
-    <h1>{{ horse.nom }}</h1>
-    <p>Race : {{ horse.race }}</p>
-    <p>Âge : {{ horse.age }} ans</p>
-    <h2>Entraînements</h2>
-    <a href="{% url 'training_add' horse.pk %}" class="btn btn-primary mb-3">Ajouter un entraînement</a>
-    <ul class="list-group">
-        {% for training in trainings %}
-            <li class="list-group-item">
-                {{ training.date }} - {{ training.type_seance }} ({{ training.duree }} min)
-                {% if training.notes %}
-                    <br><small>{{ training.notes }}</small>
-                {% endif %}
-            </li>
-        {% empty %}
-            <li class="list-group-item">Aucun entraînement enregistré.</li>
-        {% endfor %}
-    </ul>
-    <a href="{% url 'home' %}" class="btn btn-secondary mt-3">Retour à home</a>
-</body>
-</html>
+{% block content %}
+<div class="max-w-4xl mx-auto mt-10 space-y-8">
+
+    <!-- Carte du cheval -->
+    <div>
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold text-muletier">Fiche équidé</h2>
+            <a href="{% url 'horse_edit' horse.pk %}" 
+               class="px-4 py-2 rounded-lg bg-orange text-white font-semibold hover:bg-orange-600 transition">
+                Modifier fiche
+            </a>
+        </div>
+
+        {% include 'training/components/horse_card.html' with horse=horse %}
+    </div>
+
+    <!-- Entraînements du cheval -->
+    <div>
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold text-muletier">Ses entraînements</h2>
+            <a href="{% url 'training_add' horse.pk %}" 
+               class="px-4 py-2 rounded-lg bg-orange text-white font-semibold hover:bg-orange-600 transition">
+                + Ajouter
+            </a>
+        </div>
+
+        <div class="space-y-4">
+            {% for training in trainings %}
+                {% include 'training/components/training_card.html' with session=training %}
+            {% empty %}
+                <p class="text-gray-600 italic">Aucun entraînement enregistré.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex justify-between items-center pt-6 ">
+        <a href="{% url 'home_horses' %}" 
+           class="px-4 py-2 rounded-lg border border-orange text-orange font-semibold hover:bg-orange hover:text-white transition">
+            Retour
+        </a>
+
+        <form method="post" action="{% url 'horse_delete' horse.pk %}" 
+              onsubmit="return confirm('Supprimer ce cheval ?');">
+            {% csrf_token %}
+            <button type="submit" 
+                    class="px-4 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition">
+                Supprimer
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

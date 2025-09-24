@@ -1,0 +1,22 @@
+<div class="bg-white shadow-lg rounded-lg p-4 flex items-center justify-between">
+    <!-- Infos du cheval -->
+    <div>
+        <h3 class="text-lg font-bold text-gray-900">
+            <a href="{% url 'horse_detail' horse.pk %}" class="link-primary">
+                {{ horse.nom }}
+            </a>
+        </h3>
+        {% if horse.birth_date %}
+            <p class="text-sm text-gray-600">{{ horse.age }} ans </p>
+        {% endif %}
+        {% if horse.race %}
+            <p class="text-sm text-gray-600">Race : {{ horse.race }}</p>
+        {% endif %}
+        {% if horse.couleur %}
+            <p class="text-sm text-gray-600">Couleur : {{ horse.couleur }}</p>
+        {% endif %}
+    </div>
+
+    <!-- Actions -->
+
+</div>

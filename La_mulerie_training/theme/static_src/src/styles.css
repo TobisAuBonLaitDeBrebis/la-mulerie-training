@@ -14,3 +14,44 @@
 @source "../../../**/*.{html,py,js}";
 
 
+/* input.css */
+.btn {
+  @apply px-4 py-2 rounded-lg font-semibold transition border-none ;
+}
+
+.btn-primary {
+  @apply bg-orange text-white hover:bg-orange-600;
+}
+
+.btn-outline {
+  @apply border border-orange text-orange hover:bg-orange hover:text-white;
+}
+
+.btn-sm {
+  @apply px-2 py-1 text-sm;
+}
+
+/* Lien par défaut */
+.link {
+  @apply font-medium transition-colors;
+}
+
+/* Variante principale */
+.link-primary {
+  @apply text-orange hover:text-orange-600 ;
+}
+
+/* Variante neutre (ex: dans les menus secondaires) */
+.link-muted {
+  @apply text-gray hover:text-gray-dark;
+}
+
+/* Variante claire (si fond sombre, ex: navbar muletier) */
+.link-light {
+  @apply text-sable hover:text-orange;
+}
+
+/* Variante "danger" (ex: suppression) */
+.link-danger {
+  @apply text-red-600 hover:text-red-800 underline;
+}

@@ -64,6 +64,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'la_mulerie_training.urls'
 LOGIN_URL = '/accounts/login/'
+LOGOUT_REDIRECT_URL = '/accounts/login/'
 
 TEMPLATES = [
     {

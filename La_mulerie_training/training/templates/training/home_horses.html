@@ -1,0 +1,50 @@
+{% extends 'la_mulerie_training/base.html' %}
+
+{% block title %}Accueil - Mes activités{% endblock %}
+
+{% block content %}
+<div class="container mx-auto mt-8">
+
+    <div class="grid grid-cols-12 gap-6">
+        <!-- Premier tiers : User Card -->
+        <div class="col-span-12 md:col-span-3"> 
+            {% include 'la_mulerie_training/components/user_card.html' with user=user  %}
+        </div>
+
+        <!-- Deuxième tiers : Contenu principal -->
+        <div class="col-span-12 md:col-span-6">
+         
+            <div class="  flex justify-center mb-6">
+                <a href="{% url 'horse_add' %}" class="px-4 py-2 bg-orange  shadow-lg text-white font-semibold rounded hover:bg-terre">
+                Ajouter un cheval
+                </a>
+            </div>
+
+            <div class="space-y-4">
+                {% for horse in horses %}
+                    {% include 'training/components/horse_card.html' with session=session %}
+                {% empty %}
+                    <p class="text-center text-gray-700">Aucun cheval enregistré.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Troisième tiers : vide pour l'instant -->
+        <div class="col-span-12 md:col-span-3">
+            <!-- Espace vide -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function switchTab(event, tabId) {
+    event.preventDefault();
+    document.querySelectorAll('.tab-content').forEach(tc => tc.classList.add('hidden'));
+    document.querySelectorAll('.tabs a').forEach(t => t.classList.remove('tab-active'));
+    document.getElementById(tabId).classList.remove('hidden');
+    event.currentTarget.classList.add('tab-active');
+}
+</script>
+{% endblock %}

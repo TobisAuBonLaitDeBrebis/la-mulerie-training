@@ -1,12 +1,13 @@
 from django.conf import settings
 from django.db import models
 import django.utils.timezone
+from datetime import date
 
 # Create your models here.
 class Horse(models.Model):
     nom = models.CharField(max_length=100)
     race = models.CharField(max_length=100)
-    age = models.PositiveIntegerField()
+    birth_date = models.DateField(default=django.utils.timezone.now)
     proprietaire = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -17,7 +18,17 @@ class Horse(models.Model):
 
     def __str__(self):
         return self.nom
-
+    @property
+    def age(self):
+        """Calcule l'âge en années à partir de la date de naissance."""
+        if self.birth_date:
+            today = date.today()
+            return (
+                today.year - self.birth_date.year
+                - ((today.month, today.day) < (self.birth_date.month, self.birth_date.day))
+            )
+        return None
+    
 class TrainingSession(models.Model):
     cheval = models.ForeignKey('Horse', on_delete=models.CASCADE, related_name='trainings')
     cavalier = models.ForeignKey(
