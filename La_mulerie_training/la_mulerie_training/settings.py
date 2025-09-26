@@ -33,7 +33,7 @@ NPM_BIN_PATH = "C:/Program Files/nodejs/npm.cmd"
 TAILWIND_APP_NAME = 'theme'
 
 INTERNAL_IPS = [
-    "127.0.0.1",
+    "127.0.0.1", "tobisaubonlaitdebrebis.pythonanywhere.com"
 ]
 
 # Application definition
