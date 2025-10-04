@@ -36,7 +36,7 @@ class TrainingViewsTest(TestCase):
         """
         python manage.py test training.tests.test_views.TrainingViewsTest.test_home_view
         """
-        url = reverse("home")
+        url = reverse("home_training")
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.horse.nom)
@@ -57,7 +57,7 @@ class TrainingViewsTest(TestCase):
         python manage.py test training.tests.test_views.TrainingViewsTest.test_horse_add_view
         """
         url = reverse("horse_add")
-        response = self.client.post(url, {"nom": "Tornado","race": "Pur-sang","age": 5})
+        response = self.client.post(url, {"nom": "Tornado","race": "Pur-sang","birth_date": "2025-09-24"})
    
         self.assertEqual(response.status_code, 302)  # redirection vers home
         self.assertTrue(Horse.objects.filter(nom="Tornado").exists())
