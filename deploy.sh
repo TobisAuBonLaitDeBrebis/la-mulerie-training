@@ -6,7 +6,7 @@ PROJECT_NAME="la_mulerie_training"
 REPO_URL="git@github.com:TobisAuBonLaitDeBrebis/la-mulerie-training.git"
 APP_DIR="/var/www/$PROJECT_NAME"
 VENV_DIR="$APP_DIR/venv"
-DJANGO_SETTINGS_MODULE="La_mulerie_training.settings.production"
+DJANGO_SETTINGS_MODULE="la_mulerie_training.settings.production"
 # (ou settings selon ton config)
 PYTHON_BIN="$VENV_DIR/bin/python"
 PIP_BIN="$VENV_DIR/bin/pip"
