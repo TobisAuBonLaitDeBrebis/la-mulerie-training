@@ -7,17 +7,13 @@ REPO_URL="git@github.com:TobisAuBonLaitDeBrebis/la-mulerie-training.git"
 APP_DIR="/var/www/$PROJECT_NAME"
 VENV_DIR="$APP_DIR/venv"
 DJANGO_SETTINGS_MODULE="la_mulerie_training.settings.prod"
-# (ou settings selon ton config)
 PYTHON_BIN="$VENV_DIR/bin/python"
 PIP_BIN="$VENV_DIR/bin/pip"
-GUNICORN_BIN="$VENV_DIR/bin/gunicorn"
-# Nom du socket / port pour Gunicorn
-GUNICORN_SOCK="/run/gunicorn/$PROJECT_NAME.sock"
-GUNICORN_WORKERS=3
-# Nom de ton service systemd (si tu en utilises un)
-SERVICE_NAME="gunicorn_$PROJECT_NAME"
 
-echo "=== Déploiement de $PROJECT_NAME ==="
+# Nom du service systemd (uWSGI)
+SERVICE_NAME="uwsgi@$PROJECT_NAME"
+
+echo "=== Déploiement de $PROJECT_NAME avec uWSGI ==="
 
 # 1. Si le dossier de l’application n’existe pas, le cloner
 if [ ! -d "$APP_DIR" ]; then
@@ -56,7 +52,7 @@ $PYTHON_BIN manage.py collectstatic --noinput --settings=$DJANGO_SETTINGS_MODULE
 echo "-- Appliquer les migrations"
 $PYTHON_BIN manage.py migrate --noinput --settings=$DJANGO_SETTINGS_MODULE
 
-# 7. Redémarrer le service (gunicorn ou autre)
+# 7. Redémarrer le service uWSGI
 echo "-- Redémarrage du service $SERVICE_NAME"
 systemctl daemon-reload || true
 systemctl restart $SERVICE_NAME
