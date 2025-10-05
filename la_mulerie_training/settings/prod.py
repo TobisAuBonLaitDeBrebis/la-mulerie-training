@@ -34,7 +34,7 @@ ALLOWED_HOSTS = ["training.la-mulerie.com", "localhost", "127.0.0.1"]
 TAILWIND_APP_NAME = 'theme'
 
 INTERNAL_IPS = [
-    "127.0.0.1", "tobisaubonlaitdebrebis.pythonanywhere.com"
+    "127.0.0.1", "training.la-mulerie.com"
 ]
 
 # Application definition
