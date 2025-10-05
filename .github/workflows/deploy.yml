@@ -35,5 +35,9 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd /var/www/la_mulerie_training
+            echo "${{ secrets.SERVER_HOST }}"
+            echo "${{ secrets.SERVER_USER }}"
+            echo "${{ secrets.SERVER_SSH_KEY }}"
             chmod +x deploy.sh
             ./deploy.sh
+ 
