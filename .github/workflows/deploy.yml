@@ -33,6 +33,13 @@ jobs:
             echo "SERVER_SSH_KEY is set"
           fi
 
+      - name: Test SSH Key
+        run: |
+          echo "${{ secrets.SERVER_SSH_KEY }}" > id_ed25519
+          chmod 600 id_ed25519
+          ssh -i id_ed25519 -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "echo 'Connected!'"
+
+
       - name: Checkout repository
         uses: actions/checkout@v3
 
