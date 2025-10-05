@@ -35,9 +35,14 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd /var/www/la_mulerie_training
-            echo "${{ secrets.SERVER_HOST }}"
-            echo "${{ secrets.SERVER_USER }}"
-            echo "${{ secrets.SERVER_SSH_KEY }}"
+            for s in SERVER_HOST SERVER_USER SERVER_SSH_KEY; do
+              if [ -z "${{ secrets[$s] }}" ]; then
+                echo "$s missing"
+                exit 1
+              else
+                echo "$s is set"
+              fi
+            done
             chmod +x deploy.sh
             ./deploy.sh
  
