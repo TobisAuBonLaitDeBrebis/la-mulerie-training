@@ -41,7 +41,7 @@ def horse_edit(request, pk):
 
 @login_required
 def home_training(request):
-    sessions = TrainingSession.objects.filter(cavalier=request.user).order_by('date')
+    sessions = TrainingSession.objects.filter(cavalier=request.user).order_by('-date')
     return render(request, "training/home_training.html", {"sessions": sessions})
 
 @login_required
