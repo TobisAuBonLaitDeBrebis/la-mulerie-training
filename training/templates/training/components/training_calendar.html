@@ -29,13 +29,13 @@ const calendar = new FullCalendar.Calendar(document.getElementById('calendar'), 
   initialView: 'dayGridMonth',
   locale: 'fr',
   headerToolbar: false, // on gère nos propres boutons
-  events: sessions.map(s => ({
-    title: '',
+events: sessions.map(
+  s => ({
+    title: s.activity,
     date: s.date,
-    display: 'background',
     backgroundColor: activityColors[s.activity] || activityColors["Autre"],
     borderColor: activityColors[s.activity] || activityColors["Autre"],
-  })),
+    textColor: 'white' })),
   dayCellDidMount: function(info) {
     const dateISO = info.date.toISOString().split('T')[0];
     const match = sessions.find(s => s.date === dateISO);
