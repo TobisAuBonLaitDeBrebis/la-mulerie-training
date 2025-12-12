@@ -1,11 +1,23 @@
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 
-<div id="calendar" class="max-w-md mx-auto bg-white rounded-xl shadow p-4"></div>
+<div class="max-w-sm mx-auto bg-white rounded-xl shadow p-4">
+  <!-- Mois courant -->
+  <div id="monthLabel" class="text-center text-lg font-semibold mb-2"></div>
+
+  <!-- Boutons navigation -->
+  <div class="flex justify-between mb-2">
+    <button id="prevBtn" class="px-4 py-2 bg-orange text-white font-semibold rounded hover:bg-terre">&lt;</button>
+    <button id="todayBtn" class="px-4 py-2 bg-orange text-white font-semibold rounded hover:bg-terre">Aujourd’hui</button>
+    <button id="nextBtn" class="px-4 py-2 bg-orange text-white font-semibold rounded hover:bg-terre">&gt;</button>
+  </div>
+
+  <!-- Conteneur du calendrier -->
+  <div id="calendar"></div>
+</div>
 
 <script>
 const sessions = JSON.parse('{{ sessions_dates|escapejs }}');
-
 const activityColors = {
   "Dressage": "#4caf50",
   "Saut": "#f59e0b",
@@ -16,41 +28,59 @@ const activityColors = {
 const calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
   initialView: 'dayGridMonth',
   locale: 'fr',
-
-  // Supprimer le titre et les boutons par défaut
-  headerToolbar: {
-    left: 'prev,next today',
-    center: '',
-    right: ''
-  },
-
-  // Boutons Tailwind custom via classes
-  buttonText: {
-    today: 'Aujourd’hui'
-  },
-
+  headerToolbar: false, // on gère nos propres boutons
   events: sessions.map(s => ({
-    title: s.activity,
+    title: '',
     date: s.date,
+    display: 'background',
     backgroundColor: activityColors[s.activity] || activityColors["Autre"],
     borderColor: activityColors[s.activity] || activityColors["Autre"],
-    textColor: 'white'
   })),
-
-  // Autres options esthétiques
-  dayMaxEvents: true,   // limite le nombre d'événements affichés
+  dayCellDidMount: function(info) {
+    const dateISO = info.date.toISOString().split('T')[0];
+    const match = sessions.find(s => s.date === dateISO);
+    if (match) {
+      const dot = document.createElement('span');
+      dot.className = 'block w-2 h-2 rounded-full absolute bottom-1 left-1/2 transform -translate-x-1/2';
+      dot.style.backgroundColor = activityColors[match.activity] || activityColors["Autre"];
+      info.el.style.position = 'relative';
+      info.el.appendChild(dot);
+    }
+  },
   height: 'auto',
+});
 
-    // Ajouter la classe btn-primary après le rendu des boutons
-  datesSet: () => {
-    document.querySelectorAll('.fc-button').forEach(btn => {
-      btn.className = '';
-      btn.classList.add(
-        'px-4' ,'py-2', 'bg-orange', 'text-white', 'font-semibold', 'rounded', 'hover:bg-terre'  
-      );
-    });
-  }
-  });
-// Rendu
+// Rendu du calendrier
 calendar.render();
+
+// Afficher le mois courant
+function updateMonthLabel() {
+  document.getElementById('monthLabel').textContent =
+    calendar.getDate().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+}
+updateMonthLabel();
+
+// Gestion des boutons
+document.getElementById('prevBtn').addEventListener('click', () => {
+  calendar.prev();
+  updateMonthLabel();
+});
+document.getElementById('nextBtn').addEventListener('click', () => {
+  calendar.next();
+  updateMonthLabel();
+});
+document.getElementById('todayBtn').addEventListener('click', () => {
+  calendar.today();
+  updateMonthLabel();
+});
 </script>
+
+<style>
+/* Mini-calendrier compact */
+.fc .fc-daygrid-day-number {
+  @apply text-xs;
+}
+.fc .fc-daygrid-day {
+  @apply p-1;
+}
+</style>
