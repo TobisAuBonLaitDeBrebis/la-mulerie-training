@@ -1,0 +1,56 @@
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+
+<div id="calendar" class="max-w-md mx-auto bg-white rounded-xl shadow p-4"></div>
+
+<script>
+const sessions = JSON.parse('{{ sessions_dates|escapejs }}');
+
+const activityColors = {
+  "Dressage": "#4caf50",
+  "Saut": "#f59e0b",
+  "Balade": "#3b82f6",
+  "Autre": "#9ca3af"
+};
+
+const calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+  initialView: 'dayGridMonth',
+  locale: 'fr',
+
+  // Supprimer le titre et les boutons par défaut
+  headerToolbar: {
+    left: 'prev,next today',
+    center: '',
+    right: ''
+  },
+
+  // Boutons Tailwind custom via classes
+  buttonText: {
+    today: 'Aujourd’hui'
+  },
+
+  events: sessions.map(s => ({
+    title: s.activity,
+    date: s.date,
+    backgroundColor: activityColors[s.activity] || activityColors["Autre"],
+    borderColor: activityColors[s.activity] || activityColors["Autre"],
+    textColor: 'white'
+  })),
+
+  // Autres options esthétiques
+  dayMaxEvents: true,   // limite le nombre d'événements affichés
+  height: 'auto',
+
+    // Ajouter la classe btn-primary après le rendu des boutons
+  datesSet: () => {
+    document.querySelectorAll('.fc-button').forEach(btn => {
+      btn.className = '';
+      btn.classList.add(
+        'px-4' ,'py-2', 'bg-orange', 'text-white', 'font-semibold', 'rounded', 'hover:bg-terre'  
+      );
+    });
+  }
+  });
+// Rendu
+calendar.render();
+</script>
