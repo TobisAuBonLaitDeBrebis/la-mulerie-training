@@ -4,6 +4,7 @@ module.exports = {
     "postcss-simple-vars": {},
     "postcss-nested": {}
   },
-  
-  
+  corePlugins: {
+    preflight: false, // désactive certaines resets si besoin
+  }
 }

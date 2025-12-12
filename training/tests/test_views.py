@@ -3,6 +3,7 @@ from django.urls import reverse
 from datetime import date
 from training.tests.factories import UserFactory, HorseFactory, TrainingSessionFactory
 from training.models import Horse, TrainingSession  
+import json
 
 class TrainingViewsTest(TestCase):
 
@@ -38,9 +39,22 @@ class TrainingViewsTest(TestCase):
         """
         url = reverse("home_training")
         response = self.client.get(url)
+        
+        # 1. Status HTTP
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, self.horse.nom)
+
+        # 2. Contexte contient sessions et sessions_dates
+        self.assertIn('sessions', response.context)
+        self.assertIn('sessions_dates', response.context)
+
+        sessions_dates = json.loads(response.context['sessions_dates'])
+        self.assertEqual(len(sessions_dates), 1)
+        self.assertEqual(sessions_dates[0]['activity'], self.session.type_seance)
+        self.assertEqual(sessions_dates[0]['date'], self.session.date.isoformat())
+
+        # 3. HTML contient le type_seance et le nom du cheval
         self.assertContains(response, self.session.type_seance)
+        self.assertContains(response, self.horse.nom)
 
     def test_horse_detail_view(self):
         """

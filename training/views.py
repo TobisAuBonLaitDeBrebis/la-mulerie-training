@@ -2,8 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .models import Horse, TrainingSession
 from .forms import HorseForm, TrainingSessionForm
 from django.contrib.auth.decorators import login_required
-
-
+import json
 
 
 # test commit
@@ -42,7 +41,15 @@ def horse_edit(request, pk):
 @login_required
 def home_training(request):
     sessions = TrainingSession.objects.filter(cavalier=request.user).order_by('-date')
-    return render(request, "training/home_training.html", {"sessions": sessions})
+    sessions_dates= [
+        {
+            "date": s.date.isoformat(),
+            "activity": s.type_seance
+        }
+        for s in sessions
+    ]
+
+    return render(request, "training/home_training.html", {"sessions": sessions, "sessions_dates": json.dumps(sessions_dates)})
 
 @login_required
 def home_horses(request):

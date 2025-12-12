@@ -6,15 +6,21 @@
                 {{ horse.nom }}
             </a>
         </h3>
-        {% if horse.birth_date %}
-            <p class="text-sm text-gray-600">{{ horse.age }} ans </p>
-        {% endif %}
-        {% if horse.race %}
-            <p class="text-sm text-gray-600">Race : {{ horse.race }}</p>
-        {% endif %}
-        {% if horse.couleur %}
-            <p class="text-sm text-gray-600">Couleur : {{ horse.couleur }}</p>
-        {% endif %}
+        <div class="flex items-center text-sm text-gray-600">
+            {% if horse.birth_date %}
+            <span class="pl-2 border-l border-gray-300 first:border-l-0 first:pl-0">{{ horse.age }} ans</span>
+            {% endif %}
+            {% if horse.race %}
+            <span class="pl-2 border-l border-gray-300 first:border-l-0 first:pl-0">Race : {{ horse.race }}</span>
+            {% endif %}
+            {% if horse.couleur %}
+            <span class="pl-2 border-l border-gray-300 first:border-l-0 first:pl-0">Couleur : {{ horse.couleur }} </span>
+            {% endif %}
+
+            {% with count=horse.trainings.all|length %}
+                <span class="pl-2 border-l border-gray-300 first:border-l-0 first:pl-0">Entraînements : {{ count }} </span>
+            {% endwith %}
+        </div>
     </div>
 
     <!-- Actions -->
