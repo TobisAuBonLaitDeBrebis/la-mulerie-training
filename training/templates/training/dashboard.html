@@ -1,0 +1,302 @@
+{% extends 'la_mulerie_training/base.html' %}
+{% load custom_filters %}
+
+{% block title %}Dashboard - La Mulerie Training{% endblock %}
+
+{% block extra_head %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto mt-8">
+
+    <div class="grid grid-cols-12 gap-6">
+        <!-- Premier tiers : KPI (comme User Card) -->
+        <div class="col-span-12 md:col-span-3">
+
+        <!-- Date Picker dans la colonne de gauche  -->
+        <div class="bg-white rounded-xl shadow-lg p-5 mb-6">
+
+            <form method="get" class="flex flex-col gap-5">
+
+                <!-- Date de début -->
+                <div class="flex items-center gap-3">
+                    <label for="start_date"
+                        class="text-xs font-bold uppercase tracking-wider text-orange bg-orange/10 px-4 py-2.5 rounded-lg whitespace-nowrap">
+                        Du
+                    </label>
+
+                    <input type="date" id="start_date" name="start_date"
+                        value="{{ start_date }}"
+                        class="input input-bordered input-sm w-full bg-white border-gray-300 rounded-lg focus:border-orange focus:ring-1 focus:ring-orange">
+                </div>
+
+                <!-- Date de fin -->
+                <div class="flex items-center gap-3">
+                    <label for="end_date"
+                        class="text-xs font-bold uppercase tracking-wider text-orange bg-orange/10 px-4 py-2.5 rounded-lg whitespace-nowrap">
+                        Au
+                    </label>
+
+                    <input type="date" id="end_date" name="end_date"
+                        value="{{ end_date }}"
+                        class="input input-bordered input-sm w-full bg-white border-gray-300 rounded-lg focus:border-orange focus:ring-1 focus:ring-orange">
+                </div>
+
+                <!-- Boutons -->
+                <div class="flex gap-4 pt-3 pb-2">
+
+                    <button type="submit"
+                            class="btn btn-sm bg-orange text-white border-none hover:bg-orange-600 transition flex-1 rounded-lg h-11">
+                        🔍 Filtrer
+                    </button>
+
+                    <a href="{% url 'dashboard' %}"
+                    class="btn btn-sm bg-muletier text-sable border-none hover:bg-terre transition flex-1 rounded-lg h-11">
+                        📅 Toutes
+                    </a>
+
+                </div>
+
+            </form>
+        </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <h2 class="text-xl font-bold text-muletier mb-4 text-center">Indicateurs Clés</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- Nombre de séances -->
+                    <div class="text-center p-4 bg-gray-50 rounded-lg">
+                        <div class="text-2xl mb-2">🏇</div>
+                        <div class="text-3xl font-bold text-muletier">{{ total_sessions }}</div>
+                        <div class="text-sm text-gray-600">Séances</div>
+                    </div>
+
+                    <!-- Nombre de chevaux -->
+                    <div class="text-center p-4 bg-gray-50 rounded-lg">
+                        <div class="text-2xl mb-2">🐴</div>
+                        <div class="text-3xl font-bold text-muletier">{{ total_horses }}</div>
+                        <div class="text-sm text-gray-600">Chevaux</div>
+                    </div>
+
+                    <!-- Temps total -->
+                    <div class="text-center p-4 bg-gray-50 rounded-lg">
+                        <div class="text-2xl mb-2">⏱️</div>
+                        <div class="text-3xl font-bold text-muletier">{{ total_duration }}</div>
+                        <div class="text-sm text-gray-600">minutes</div>
+                    </div>
+
+                    <!-- Coût total -->
+                    <div class="text-center p-4 bg-gray-50 rounded-lg">
+                        <div class="text-2xl mb-2">💰</div>
+                        <div class="text-3xl font-bold text-muletier">{{ total_cost|floatformat:2 }} €</div>
+                        <div class="text-sm text-gray-600">Coût total</div>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+
+        <!-- Deuxième tiers : Contenu principal (Graphique + Stats) -->
+        <div class="col-span-12 md:col-span-6">
+            <!-- Graphique en premier -->
+            <div class="bg-white rounded-xl shadow-lg p-4 mb-6">
+                <h3 class="text-lg font-bold text-muletier mb-3">
+                    📈 Séances
+                    {% if start_date or end_date %}
+                    ({{ start_date }} {% if end_date %}→ {{ end_date }}{% endif %})
+                    {% else %}
+                    (toutes les données)
+                    {% endif %}
+                </h3>
+                <div class="h-[280px] w-full">
+                    <canvas id="monthlyChart" class="w-full h-full"></canvas>
+                </div>
+            </div>
+
+            <!-- Répartition par type -->
+            <div class="bg-white rounded-xl shadow-lg p-4 mb-6">
+                <h3 class="text-lg font-bold text-muletier mb-3">🎯 Par type de séance</h3>
+                <div class="space-y-2">
+                    {% for item in sessions_by_type %}
+                    <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <div class="flex-1">
+                            <span class="font-medium text-sm">{{ item.type_seance }}</span>
+                            <div class="text-xs text-gray-500">{{ item.count }} séance(s)</div>
+                        </div>
+                        <div class="text-right text-sm">
+                            <div class="font-bold">{{ item.total_duration }} min</div>
+                            <div class="text-xs text-gray-500">{{ item.count|percent_of:total_sessions }}%</div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-center text-gray-500 text-sm py-4">Aucune séance</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Derniers entraînements -->
+            <div class="bg-white rounded-xl shadow-lg p-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-muletier">📅 Derniers entraînements</h3>
+                    <a href="{% url 'home_training' %}" 
+                       class="px-4 py-2 bg-orange text-white rounded-lg hover:bg-orange-600 transition text-sm font-semibold">
+                        Voir tout
+                    </a>
+                </div>
+                
+                {% if recent_sessions %}
+                <div class="space-y-3">
+                    {% for session in recent_sessions %}
+                    <div class="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition">
+                        <div class="flex justify-between items-center mb-1">
+                            <h4 class="font-bold text-muletier">
+                                <a href="{% url 'horse_detail' session.cheval.pk %}" class="hover:text-orange-600">
+                                    {{ session.cheval.nom }}
+                                </a>
+                            </h4>
+                            <span class="text-gray-600 text-xs">{{ session.date|date:"d M Y" }}</span>
+                        </div>
+                        <p class="text-muletier text-sm mb-2">
+                            {{ session.type_seance }} - {{ session.duree }} min
+                        </p>
+                        {% if session.notes %}
+                        <p class="text-gray-700 text-xs italic mb-2">{{ session.notes }}</p>
+                        {% endif %}
+                        <div class="flex justify-end space-x-2">
+                            <a href="{% url 'training_detail' session.pk %}" 
+                               class="text-blue-500 hover:text-blue-700 text-xs">
+                                Détails
+                            </a>
+                            <a href="{% url 'training_edit' session.pk %}" 
+                               class="text-orange-500 hover:text-orange-700 text-xs">
+                                Modifier
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-6">
+                    <p class="text-gray-500 text-sm">Aucun entraînement enregistré</p>
+                    <a href="{% url 'training_add_global' %}" 
+                       class="mt-3 inline-block px-4 py-2 bg-orange text-white rounded-lg hover:bg-orange-600 transition text-sm">
+                        Ajouter ton premier entraînement
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Troisième tiers : Calendrier + Stats supplémentaires -->
+        <div class="col-span-12 md:col-span-3">
+            <!-- Calendrier -->
+            {% include 'training/components/training_calendar.html' with sessions_dates=sessions_dates %}
+
+            <!-- Stats supplémentaires -->
+            <div class="bg-white rounded-xl shadow-lg p-4 mt-6">
+                <h3 class="text-lg font-bold text-muletier mb-3">📊 Détails</h3>
+                <div class="space-y-4">
+                    <div class="text-center p-3 bg-gray-50 rounded-lg">
+                        <div class="text-sm text-gray-600 mb-1">Moyenne/séance</div>
+                        <div class="text-xl font-bold text-muletier">{{ avg_duration }} min</div>
+                    </div>
+                    <div class="text-center p-3 bg-gray-50 rounded-lg">
+                        <div class="text-sm text-gray-600 mb-1">Coût moyen</div>
+                        <div class="text-xl font-bold text-muletier">{{ avg_cost }} €</div>
+                    </div>
+                    <div class="text-center p-3 bg-gray-50 rounded-lg">
+                        <div class="text-sm text-gray-600 mb-1">Séances/cheval</div>
+                        <div class="text-xl font-bold text-muletier">{{ sessions_per_horse }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Répartition par cheval -->
+            <div class="bg-white rounded-xl shadow-lg p-4 mt-6">
+                <h3 class="text-lg font-bold text-muletier mb-3">🐎 Par cheval</h3>
+                <div class="grid grid-cols-2 gap-3 space-y-4">
+                    {% for item in sessions_by_horse %}
+                    <div class="bg-gray-50 rounded-lg p-2 text-center">
+                        <div class="font-medium text-sm text-muletier truncate">{{ item.cheval__nom }}</div>
+                        <div class="text-lg font-bold">{{ item.count }}</div>
+                        <div class="text-xs text-gray-500">{{ item.total_duration }} min</div>
+                    </div>
+                    {% empty %}
+                    <p class="text-center text-gray-500 text-sm col-span-2 py-2">Aucun cheval</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Graphique mensuel
+const monthlyCtx = document.getElementById('monthlyChart');
+const monthNames = {{ month_names|safe }};
+const monthCounts = {{ month_counts|safe }};
+
+new Chart(monthlyCtx, {
+    type: 'bar',
+    data: {
+        labels: monthNames,
+        datasets: [{
+            label: 'Séances',
+            data: monthCounts,
+            backgroundColor: [
+                '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', 
+                '#ffc107', '#ff9800', '#ff5722', '#e91e63',
+                '#9c27b0', '#673ab7', '#3f51b5', '#2196f3'
+            ],
+            borderRadius: 4,
+            borderSkipped: false,
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return context.parsed.y + ' séance(s)';
+                    }
+                }
+            }
+        },
+        scales: {
+            x: {
+                grid: {
+                    display: false
+                },
+                ticks: {
+                    font: {
+                        size: 10
+                    }
+                }
+            },
+            y: {
+                beginAtZero: true,
+                max: Math.max(...monthCounts) + 2,
+                grid: {
+                    color: 'rgba(0,0,0,0.05)'
+                },
+                ticks: {
+                    font: {
+                        size: 10
+                    },
+                    stepSize: 1
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -16,13 +16,17 @@
         <!-- Menu principal (centré sur desktop) -->
         {% if user.is_authenticated %}
             <div class="hidden md:flex flex-1 justify-center space-x-6">
+                <a href="{% url 'dashboard' %}"
+                class="{% if request.resolver_match.url_name == 'dashboard' %}text-orange font-bold border-orange{% else %}hover:text-orange{% endif %}">
+                Dashboard
+                </a>
                 <a href="{% url 'home_training' %}"
                 class="{% if request.resolver_match.url_name == 'home_training' %}text-orange font-bold  border-orange{% else %}hover:text-orange{% endif %}">
                 Entraînements
                 </a>
             <a href="{% url 'home_horses' %}"
                 class="{% if request.resolver_match.url_name == 'home_horses' %}text-orange font-bold  border-orange{% else %}hover:text-orange{% endif %}">
-                chevaux
+                Chevaux
                 </a>
             </div>
         {% endif %}
@@ -64,15 +68,19 @@
     <!-- Menu mobile -->
     <div id="mobile-menu" class="hidden md:hidden px-4 pb-4 space-y-2">
         {% if user.is_authenticated %}
+        <a href="{% url 'dashboard' %}"
+            class="block py-2 {% if request.resolver_match.url_name == 'dashboard' %}text-orange font-bold border-orange{% else %}hover:text-orange{% endif %}">
+            Dashboard
+        </a>
         <a href="{% url 'home_training' %}"
             class="block py-2 {% if request.resolver_match.url_name == 'home_training' %}text-orange font-bold  border-orange{% else %}hover:text-orange{% endif %}">
             Entraînements
         </a>
         <a href="{% url 'home_horses' %}"
             class=" block py-2 {% if request.resolver_match.url_name == 'home_horses' %}text-orange font-bold  border-orange{% else %}hover:text-orange{% endif %}">
-            chevaux
+            Chevaux
         </a>
-         
+        
         <hr class="border-sable/30">
         {% endif %}
 

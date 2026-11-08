@@ -3,7 +3,9 @@
 
 {% block content %}
 <div class="max-w-xl mx-auto  rounded-2xl shadow-lg p-8 mt-10">
-    <h2 class="text-3xl font-bold mb-6 text-center text-muletier">Formulaire entraînement</h2>
+    <h2 class="text-3xl font-bold mb-6 text-center text-muletier">
+        {% if training %}Modifier{% else %}Ajouter{% endif %} un entraînement
+    </h2>
 
     <form method="post" class="space-y-5">
         {% csrf_token %}
@@ -57,4 +59,15 @@
         </div>
     </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Prémplir la date si elle est dans l'URL (ex: ?date=2025-12-25)
+const urlParams = new URLSearchParams(window.location.search);
+const dateParam = urlParams.get('date');
+if (dateParam) {
+    document.getElementById('id_date').value = dateParam;
+}
+</script>
 {% endblock %}

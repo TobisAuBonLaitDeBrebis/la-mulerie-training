@@ -29,25 +29,30 @@ const calendar = new FullCalendar.Calendar(document.getElementById('calendar'), 
   initialView: 'dayGridMonth',
   locale: 'fr',
   headerToolbar: false, // on gère nos propres boutons
-events: sessions.map(
-  s => ({
-    title: s.activity,
-    date: s.date,
-    backgroundColor: activityColors[s.activity] || activityColors["Autre"],
-    borderColor: activityColors[s.activity] || activityColors["Autre"],
-    textColor: 'white' })),
-  dayCellDidMount: function(info) {
-    const dateISO = info.date.toISOString().split('T')[0];
-    const match = sessions.find(s => s.date === dateISO);
-    if (match) {
-      const dot = document.createElement('span');
-      dot.className = 'block w-2 h-2 rounded-full absolute bottom-1 left-1/2 transform -translate-x-1/2';
-      dot.style.backgroundColor = activityColors[match.activity] || activityColors["Autre"];
-      info.el.style.position = 'relative';
-      info.el.appendChild(dot);
-    }
+  events: sessions.map(
+    s => ({
+      id: s.id,
+      title: s.activity,
+      date: s.date,
+      backgroundColor: activityColors[s.activity] || activityColors["Autre"],
+      borderColor: activityColors[s.activity] || activityColors["Autre"],
+      textColor: 'white'
+    })),
+  eventClick: function(info) {
+    // Redirige vers le formulaire d'édition de la séance
+    const sessionId = info.event.id;
+    window.location.href = `/entrainement/${sessionId}/edit/`;
+  },
+  dateClick: function(info) {
+    // Redirige TOUJOURS vers le formulaire d'ajout avec la date cliquée
+    // (même si le jour a déjà des événements - on clique entre les tags)
+    const dateISO = info.dateStr;
+    window.location.href = `{% url 'training_add_global' %}?date=${dateISO}`;
   },
   height: 'auto',
+  dayMaxEvents: 5,  // Affiche jusqu'à 5 événements avant le "+"
+  moreLinkClick: 'popover',  // Affiche les autres dans un popover
+  dayMaxEventRows: 3,  // Nombre max de lignes d'événements avant scroll
 });
 
 // Rendu du calendrier
@@ -79,8 +84,40 @@ document.getElementById('todayBtn').addEventListener('click', () => {
 /* Mini-calendrier compact */
 .fc .fc-daygrid-day-number {
   @apply text-xs;
+  font-weight: bold;
 }
 .fc .fc-daygrid-day {
-  @apply p-1;
+  @apply p-0.5;
+  min-height: 60px;
+}
+/* Curseur pointer sur les jours cliquables */
+.fc-daygrid-day {
+  cursor: pointer;
+}
+.fc-daygrid-day:hover {
+  background-color: #f3f4f6;
+}
+/* Style des événements comme des petits tags de même largeur */
+.fc-event {
+  cursor: pointer;
+  font-size: 10px;
+  padding: 2px 4px;
+  margin: 1px;
+  border-radius: 4px;
+  text-align: center;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  font-weight: 500;
+  width: 30px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* pour plusieurs événements sur un même jour */
+.fc-daygrid-day-events {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
 }
 </style>
