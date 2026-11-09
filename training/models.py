@@ -1,5 +1,7 @@
 from django.conf import settings
 from django.db import models
+from django.core.validators import MinValueValidator
+from django.db.models import CheckConstraint, Q, F
 import django.utils.timezone
 from datetime import date
 
@@ -11,9 +13,7 @@ class Horse(models.Model):
     proprietaire = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='chevaux',
-        null=True,  # Pour migration initiale, à rendre obligatoire ensuite
-        blank=True
+        related_name='chevaux'
     )
 
     def __str__(self):
@@ -34,16 +34,35 @@ class TrainingSession(models.Model):
     cavalier = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='sessions',
-        null=True,  # <-- Ajoute null=True
-        blank=True  # <-- Ajoute blank=True pour l'admin
+        related_name='sessions'
     )
     date = models.DateField(default=django.utils.timezone.now)
     type_seance = models.CharField(max_length=100)
-    duree = models.PositiveIntegerField(help_text="Durée en minutes")
+    duree = models.PositiveIntegerField(
+        help_text="Durée en minutes",
+        validators=[MinValueValidator(1)]
+    )
     notes = models.TextField(blank=True, null=True)
-    cout = models.DecimalField(max_digits=7, decimal_places=2, blank=True, null=True, help_text="Coût de l'entraînement en euros")
+    cout = models.DecimalField(
+        max_digits=7, 
+        decimal_places=2, 
+        blank=True, 
+        null=True, 
+        help_text="Coût de l'entraînement en euros",
+        validators=[MinValueValidator(0)]
+    )
 
+    class Meta:
+        constraints = [
+            CheckConstraint(
+                check=Q(cout__isnull=True) | Q(cout__gte=0),
+                name='cout_non_negatif'
+            ),
+            CheckConstraint(
+                check=Q(duree__gte=1),
+                name='duree_positive'
+            ),
+        ]
 
     def __str__(self):
         return f"{self.cheval.nom} - {self.date} - {self.type_seance}"

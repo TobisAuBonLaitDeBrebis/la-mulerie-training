@@ -270,12 +270,18 @@ def training_edit(request, pk):
 
 @login_required
 def horse_delete(request, pk):
+    if request.method != 'POST':
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(['POST'])
     horse = get_object_or_404(Horse, pk=pk, proprietaire=request.user)
     horse.delete()
     return redirect('home_horses')
 
 @login_required
 def training_delete(request, pk):
+    if request.method != 'POST':
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(['POST'])
     training = get_object_or_404(TrainingSession, pk=pk, cavalier=request.user)
     training.delete()
     return redirect('home_training')

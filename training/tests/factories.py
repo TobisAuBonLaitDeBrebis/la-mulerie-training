@@ -11,6 +11,7 @@ class UserFactory(factory.django.DjangoModelFactory):
     email = factory.LazyAttribute(lambda o: f"{o.username}@example.com")
     password = factory.PostGenerationMethodCall("set_password", "password123")
 
+
 class HorseFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Horse
@@ -18,16 +19,17 @@ class HorseFactory(factory.django.DjangoModelFactory):
     nom = factory.Faker('first_name')
     race = factory.Faker('word')
     birth_date = factory.Faker('date_of_birth')
+    # proprietaire est requis, on utilise l'utilisateur par defaut
+    proprietaire = factory.SubFactory(UserFactory)
 
     @factory.post_generation
     def set_age(obj, create, extracted, **kwargs):
         if extracted:
-            # calculer birth_date à partir de l’âge voulu
+            # calculer birth_date a partir de lage voulu
             today = datetime.date.today()
             obj.birth_date = today.replace(year=today.year - extracted)
             if create:
                 obj.save()
-
 
 
 class TrainingSessionFactory(factory.django.DjangoModelFactory):
@@ -39,3 +41,5 @@ class TrainingSessionFactory(factory.django.DjangoModelFactory):
     type_seance = factory.Faker('word')
     duree = factory.Faker('pyint', min_value=10, max_value=180)
     notes = factory.Faker('sentence')
+    # cavalier est requis, on utilise le proprietaire du cheval par defaut
+    cavalier = factory.LazyAttribute(lambda o: o.cheval.proprietaire if o.cheval and o.cheval.proprietaire else UserFactory())

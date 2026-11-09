@@ -112,7 +112,7 @@ class TrainingViewsTest(TestCase):
         python manage.py test training.tests.test_views.TrainingViewsTest.test_horse_delete_view
         """
         url = reverse("horse_delete", args=[self.horse.pk])
-        response = self.client.get(url)
+        response = self.client.post(url)
         self.assertEqual(response.status_code, 302)
         self.assertFalse(Horse.objects.filter(pk=self.horse.pk).exists())
 
@@ -121,7 +121,7 @@ class TrainingViewsTest(TestCase):
         python manage.py test training.tests.test_views.TrainingViewsTest.test_training_delete_view
         """
         url = reverse("training_delete", args=[self.session.pk])
-        response = self.client.get(url)
+        response = self.client.post(url)
         self.assertEqual(response.status_code, 302)
         self.assertFalse(TrainingSession.objects.filter(pk=self.session.pk).exists())
 
@@ -141,5 +141,6 @@ class TrainingViewsTest(TestCase):
         other_horse = HorseFactory(proprietaire=self.other_user)
         other_training = TrainingSessionFactory(cheval=other_horse, cavalier=self.other_user)
         url = reverse("training_delete", args=[other_training.pk])
-        response = self.client.get(url)
+        response = self.client.post(url)
+        # La vue accepte POST mais get_object_or_404 échoue car cavalier != request.user
         self.assertEqual(response.status_code, 404)
