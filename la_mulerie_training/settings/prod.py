@@ -15,7 +15,8 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-
+# DRF Configuration
+from .drf import REST_FRAMEWORK, SIMPLE_JWT
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -27,7 +28,6 @@ SECRET_KEY = 'django-insecure--105r3m(#+xkab%3oz@(^*oytp7rg618^48j&ct(z+61@45@3w
 DEBUG = False
 
 ALLOWED_HOSTS = ["training.la-mulerie.com", "localhost", "127.0.0.1"]
-
 
 
 
@@ -46,9 +46,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
+    'corsheaders',
     'la_mulerie_training',
     'training',
     'accounts',
+    'api',
     'tailwind',
     'theme',
 ]
@@ -56,6 +61,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -70,7 +76,7 @@ LOGOUT_REDIRECT_URL = '/accounts/login/'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        "DIRS":  [BASE_DIR / "la_mulerie_training" / "templates"], # Laisse vide pour utiliser les templates des apps
+        "DIRS":  [BASE_DIR / "la_mulerie_training" / "templates"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -97,7 +103,7 @@ DATABASES = {
 
 
 # Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
+# https://docs.djangoproject.com/en/5.2/topics/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -128,7 +134,7 @@ USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
+# https://docs.djangoproject.com/en/5.2/topics/i18n/
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'static'
@@ -142,3 +148,9 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# CORS Settings (plus restrictif en production)
+CORS_ALLOWED_ORIGINS = [
+    "https://training.la-mulerie.com",
+    "https://www.la-mulerie.com",
+]
+CORS_ALLOW_CREDENTIALS = True
