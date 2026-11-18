@@ -36,7 +36,8 @@ REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'api.exceptions.custom_exception_handler',
 }
 
-# JWT Settings - SIGNING_KEY sera défini dans les settings principaux
+# JWT Settings - Base configuration
+# SIGNING_KEY and SECRET_KEY must be set in the main settings file
 SIMPLE_JWT = {
     # Token life times
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
@@ -48,7 +49,7 @@ SIMPLE_JWT = {
     
     # Token type claims
     'ALGORITHM': 'HS256',
-    'SIGNING_KEY': None,  # Doit être défini dans les settings principaux
+    # SIGNING_KEY will be set in dev.py/prod.py to settings.SECRET_KEY
     'VERIFYING_KEY': None,
     
     # Audience and issuer

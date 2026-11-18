@@ -13,11 +13,14 @@ class Horse(models.Model):
     proprietaire = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='chevaux'
+        related_name='chevaux',
+        null=False,
+        blank=False
     )
 
     def __str__(self):
         return self.nom
+    
     @property
     def age(self):
         """Calcule l'âge en années à partir de la date de naissance."""
@@ -29,12 +32,20 @@ class Horse(models.Model):
             )
         return None
     
+    def save(self, *args, **kwargs):
+        """Validation avant sauvegarde"""
+        if self.proprietaire is None:
+            raise ValueError("Le propriétaire est requis")
+        super().save(*args, **kwargs)
+    
 class TrainingSession(models.Model):
     cheval = models.ForeignKey('Horse', on_delete=models.CASCADE, related_name='trainings')
     cavalier = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='sessions'
+        related_name='sessions',
+        null=False,
+        blank=False
     )
     date = models.DateField(default=django.utils.timezone.now)
     type_seance = models.CharField(max_length=100)
@@ -66,3 +77,11 @@ class TrainingSession(models.Model):
 
     def __str__(self):
         return f"{self.cheval.nom} - {self.date} - {self.type_seance}"
+    
+    def save(self, *args, **kwargs):
+        """Validation avant sauvegarde"""
+        if self.cavalier is None:
+            raise ValueError("Le cavalier est requis")
+        if self.duree <= 0:
+            raise ValueError("La durée doit être positive")
+        super().save(*args, **kwargs)

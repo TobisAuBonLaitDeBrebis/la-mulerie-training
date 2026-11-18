@@ -18,11 +18,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # DRF Configuration
 from .drf import REST_FRAMEWORK, SIMPLE_JWT
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure--105r3m(#+xkab%3oz@(^*oytp7rg618^48j&ct(z+61@45@3w'
+
+# Set JWT signing key
+SIMPLE_JWT['SIGNING_KEY'] = SECRET_KEY
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -151,7 +151,7 @@ STATICFILES_DIRS = [
 
 # CORS Settings (pour le développement mobile)
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:19006",  # Expo dev server
+    "http://localhost:19006",
     "http://127.0.0.1:19006",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
