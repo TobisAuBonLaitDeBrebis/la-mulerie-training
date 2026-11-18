@@ -16,7 +16,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # DRF Configuration
-from .drf import REST_FRAMEWORK, SIMPLE_JWT
+from .drf import REST_FRAMEWORK, SIMPLE_JWT, SPECTACULAR_SETTINGS
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure--105r3m(#+xkab%3oz@(^*oytp7rg618^48j&ct(z+61@45@3w'
@@ -26,6 +26,10 @@ SIMPLE_JWT['SIGNING_KEY'] = SECRET_KEY
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
+
+# Documentation OpenAPI (SwaggerUI) desactivee en production :
+# le contrat machine-readable reste expose sur /api/schema/.
+API_SERVE_DOCS = False
 
 ALLOWED_HOSTS = ["training.la-mulerie.com", "localhost", "127.0.0.1"]
 
@@ -49,6 +53,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
+    'drf_spectacular',
     'corsheaders',
     'la_mulerie_training',
     'training',

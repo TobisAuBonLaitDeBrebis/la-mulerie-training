@@ -16,7 +16,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # DRF Configuration
-from .drf import REST_FRAMEWORK, SIMPLE_JWT
+from .drf import REST_FRAMEWORK, SIMPLE_JWT, SPECTACULAR_SETTINGS
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure--105r3m(#+xkab%3oz@(^*oytp7rg618^48j&ct(z+61@45@3w'
@@ -30,6 +30,9 @@ DEBUG = True
 ALLOWED_HOSTS = ["127.0.0.1"]
 
 NPM_BIN_PATH = "C:/Program Files/nodejs/npm.cmd"
+
+# Documentation OpenAPI (SwaggerUI) servie en developpement
+API_SERVE_DOCS = True
 
 
 TAILWIND_APP_NAME = 'theme'
@@ -50,6 +53,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
+    'drf_spectacular',
     'corsheaders',
     'la_mulerie_training',
     'training',

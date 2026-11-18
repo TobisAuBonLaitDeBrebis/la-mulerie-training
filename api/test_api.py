@@ -1,6 +1,6 @@
 import contextlib
 import uuid as uuid_module
-from datetime import date
+from datetime import date, timedelta
 from unittest.mock import patch
 
 from django.db import IntegrityError, transaction
@@ -557,3 +557,137 @@ class TrainingSessionConcurrencyTestCase(TransactionTestCase):
             TrainingSession.objects.filter(client_uuid=key).count(),
             1,
         )
+
+
+class DashboardApiTestCase(TestCase):
+    """Tests pour GET /api/v1/dashboard/."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username='dashuser', password='dashpass123',
+        )
+        self.other_user = User.objects.create_user(
+            username='otherdash', password='otherdash123',
+        )
+
+    def authenticate(self, user=None):
+        self.client.force_authenticate(user=user or self.user)
+
+    def test_requires_authentication(self):
+        response = self.client.get(reverse('api:dashboard'))
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_returns_expected_indicators(self):
+        horse = HorseFactory(proprietaire=self.user, nom='Morange')
+        TrainingSessionFactory(cheval=horse, cavalier=self.user, duree=30, cout='10.00')
+        TrainingSessionFactory(cheval=horse, cavalier=self.user, duree=60, cout='20.00')
+
+        self.authenticate()
+        response = self.client.get(reverse('api:dashboard'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertEqual(response.data['total_sessions'], 2)
+        self.assertEqual(response.data['total_horses'], 1)
+        self.assertEqual(response.data['total_duration'], 90)
+        self.assertEqual(float(response.data['total_cost']), 30.0)
+        self.assertEqual(response.data['avg_duration'], 45.0)
+        self.assertEqual(float(response.data['avg_cost']), 15.0)
+        self.assertEqual(response.data['sessions_per_horse'], 2.0)
+
+    def test_isolation_between_users(self):
+        other_horse = HorseFactory(proprietaire=self.other_user, nom='ChevalAutre')
+        TrainingSessionFactory(cheval=other_horse, cavalier=self.other_user, duree=999)
+        horse = HorseFactory(proprietaire=self.user)
+        TrainingSessionFactory(cheval=horse, cavalier=self.user, duree=10)
+
+        self.authenticate()
+        response = self.client.get(reverse('api:dashboard'))
+
+        self.assertEqual(response.data['total_sessions'], 1)
+        self.assertEqual(response.data['total_duration'], 10)
+
+        # les equides comptes sont ceux du cavalier authentifie
+        names = [s['cheval'] for s in response.data['sessions_by_horse']]
+        self.assertNotIn('ChevalAutre', names)
+
+    def test_period_filter_changes_totals_and_is_reported(self):
+        horse = HorseFactory(proprietaire=self.user)
+        today = date.today()
+        TrainingSessionFactory(cheval=horse, cavalier=self.user, date=today, duree=60)
+        TrainingSessionFactory(
+            cheval=horse, cavalier=self.user,
+            date=today - timedelta(days=60), duree=40,
+        )
+
+        self.authenticate()
+        start = (today - timedelta(days=7)).isoformat()
+        end = today.isoformat()
+        response = self.client.get(
+            reverse('api:dashboard'),
+            {'start_date': start, 'end_date': end},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['total_sessions'], 1)
+        self.assertEqual(response.data['period'], {'start_date': start, 'end_date': end})
+
+    def test_period_boundaries_are_inclusive(self):
+        horse = HorseFactory(proprietaire=self.user)
+        TrainingSessionFactory(cheval=horse, cavalier=self.user, date=date(2025, 1, 10), duree=10)
+        TrainingSessionFactory(cheval=horse, cavalier=self.user, date=date(2025, 1, 20), duree=20)
+        TrainingSessionFactory(cheval=horse, cavalier=self.user, date=date(2025, 1, 9), duree=1)
+        TrainingSessionFactory(cheval=horse, cavalier=self.user, date=date(2025, 1, 21), duree=1)
+
+        self.authenticate()
+        response = self.client.get(
+            reverse('api:dashboard'),
+            {'start_date': '2025-01-10', 'end_date': '2025-01-20'},
+        )
+        self.assertEqual(response.data['total_sessions'], 2)
+        self.assertEqual(response.data['total_duration'], 30)
+
+    def test_invalid_period_returns_400(self):
+        self.authenticate()
+        response = self.client.get(reverse('api:dashboard'), {'start_date': '10-01-2025'})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_recent_sessions_and_shape(self):
+        horse = HorseFactory(proprietaire=self.user, nom='Morange')
+        for i in range(7):
+            TrainingSessionFactory(
+                cheval=horse, cavalier=self.user,
+                date=date.today() - timedelta(days=i), duree=10 + i,
+            )
+
+        self.authenticate()
+        response = self.client.get(reverse('api:dashboard'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        recent = response.data['recent_sessions']
+        self.assertEqual(len(recent), 5)
+        first = recent[0]
+        self.assertEqual(
+            set(first.keys()),
+            {'id', 'date', 'type_seance', 'cheval', 'duree'},
+        )
+        self.assertEqual(set(response.data.keys()), {
+            'total_sessions', 'total_horses', 'total_duration', 'total_cost',
+            'avg_duration', 'avg_cost', 'sessions_per_horse',
+            'sessions_by_type', 'sessions_by_horse', 'month_names',
+            'month_counts', 'recent_sessions', 'sessions_dates', 'period',
+        })
+
+    def test_sessions_by_type_shape(self):
+        horse = HorseFactory(proprietaire=self.user)
+        TrainingSessionFactory(cheval=horse, cavalier=self.user, type_seance='Dressage', duree=60)
+        TrainingSessionFactory(cheval=horse, cavalier=self.user, type_seance='Dressage', duree=45)
+        TrainingSessionFactory(cheval=horse, cavalier=self.user, type_seance='Saut', duree=30)
+
+        self.authenticate()
+        response = self.client.get(reverse('api:dashboard'))
+
+        self.assertEqual(response.data['sessions_by_type'], [
+            {'type_seance': 'Dressage', 'count': 2, 'total_duration': 105},
+            {'type_seance': 'Saut', 'count': 1, 'total_duration': 30},
+        ])

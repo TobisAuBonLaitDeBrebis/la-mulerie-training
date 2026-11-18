@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.db import models
 from .models import Horse, TrainingSession
 from .forms import HorseForm, TrainingSessionForm
+from .services import build_dashboard_data
 from django.contrib.auth.decorators import login_required
 from datetime import datetime, timedelta
 import json
@@ -43,142 +44,23 @@ def horse_edit(request, pk):
 @login_required
 def dashboard(request):
     """Dashboard avec statistiques et analytiques"""
-    from django.db.models.functions import ExtractMonth, ExtractYear
-    from datetime import datetime
-    
-    # Récupérer les paramètres de filtre de date
     start_date_str = request.GET.get('start_date')
     end_date_str = request.GET.get('end_date')
-    
-    # Par défaut : toutes les périodes (pas de filtre de date)
-    # Si on veut afficher toutes les données, on ne passe pas de date_filter
-    date_filter = {}
-    if start_date_str:
-        date_filter['date__gte'] = start_date_str
-    if end_date_str:
-        date_filter['date__lte'] = end_date_str
-    
-    # Définir le filtre de base (toutes les séances de l'utilisateur)
-    base_filter = {'cavalier': request.user}
-    
-    # Appliquer le filtre de date
-    date_filter = {}
-    if start_date_str:
-        date_filter['date__gte'] = start_date_str
-    if end_date_str:
-        date_filter['date__lte'] = end_date_str
-    
-    # Filtre complet pour les séances
-    sessions_filter = {**base_filter, **date_filter}
-    
-    # Statistiques globales (filtrées)
-    sessions_qs = TrainingSession.objects.filter(**sessions_filter)
-    total_sessions = sessions_qs.count()
-    total_horses = Horse.objects.filter(proprietaire=request.user).count()
-    
-    # Temps total d'entraînement (en minutes)
-    total_duration = sessions_qs.aggregate(
-        total=models.Sum('duree')
-    )['total'] or 0
-    
-    # Coût total
-    total_cost = sessions_qs.aggregate(
-        total=models.Sum('cout')
-    )['total'] or 0
-    
-    # Répartition par type de séance
-    sessions_by_type = sessions_qs.values('type_seance').annotate(
-        count=models.Count('id'),
-        total_duration=models.Sum('duree')
-    ).order_by('-count')
-    
-    # Dernières séances (5 dernières)
-    recent_sessions = sessions_qs.order_by('-date')[:5]
-    
-    # Séances par cheval
-    sessions_by_horse = sessions_qs.values('cheval__nom').annotate(
-        count=models.Count('id'),
-        total_duration=models.Sum('duree')
-    ).order_by('-total_duration')
-    
-    # Séances par mois - utiliser l'année des données filtrées ou année en cours
-    # Si des dates sont sélectionnées, on utilise les mois de ces dates
-    # Sinon, on utilise l'année en cours
-    if start_date_str or end_date_str:
-        # Si on a un filtre de date, on extrait les mois des données filtrées
-        sessions_by_month = sessions_qs.annotate(
-            month=ExtractMonth('date')
-        ).values('month').annotate(
-            count=models.Count('id')
-        ).order_by('month')
-        
-        # Déterminer la plage de mois à afficher
-        all_months_in_data = [item['month'] for item in sessions_by_month]
-        if all_months_in_data:
-            min_month = min(all_months_in_data)
-            max_month = max(all_months_in_data)
-            # Créer la liste des mois à afficher (de min à max)
-            month_range = list(range(min_month, max_month + 1))
-        else:
-            # Pas de données, on affiche tous les mois de l'année en cours
-            month_range = list(range(1, 13))
-            min_month = 1
-            max_month = 12
-    else:
-        # Pas de filtre de date, on affiche l'année en cours
-        current_year = datetime.now().year
-        sessions_by_month = sessions_qs.filter(date__year=current_year).annotate(
-            month=ExtractMonth('date')
-        ).values('month').annotate(
-            count=models.Count('id')
-        ).order_by('month')
-        month_range = list(range(1, 13))
-    
-    # Créer les noms de mois pour la plage sélectionnée
-    month_names_full = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-                        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
-    month_names = [month_names_full[m-1] for m in month_range]
-    
-    # Préparer les counts pour chaque mois de la plage
-    month_counts = [0] * len(month_range)
-    for item in sessions_by_month:
-        month_index = item['month'] - month_range[0]  # index relatif à la plage
-        if 0 <= month_index < len(month_range):
-            month_counts[month_index] = item['count']
-    
-    # Calculer les moyennes pour éviter d'utiliser le filtre 'div' dans le template
-    avg_duration = round(total_duration / total_sessions, 1) if total_sessions > 0 else 0
-    avg_cost = round(total_cost / total_sessions, 2) if total_sessions > 0 else 0
-    sessions_per_horse = round(total_sessions / total_horses, 1) if total_horses > 0 else 0
-    
-    # Préparer sessions_dates pour le calendrier
-    sessions_dates = [
-        {
-            "id": s.pk,
-            "date": s.date.isoformat(),
-            "activity": s.type_seance
-        }
-        for s in sessions_qs
-    ]
-    
+
+    data = build_dashboard_data(
+        request.user,
+        start_date=start_date_str,
+        end_date=end_date_str,
+    )
+
+    # Le calendrier web consomme le JSON directement dans le template
+    data['sessions_dates'] = json.dumps(data['sessions_dates'])
+
     # Passer les dates sélectionnées au template pour les afficher dans le datepicker
-    return render(request, "training/dashboard.html", {
-        'total_sessions': total_sessions,
-        'total_horses': total_horses,
-        'total_duration': total_duration,
-        'total_cost': total_cost,
-        'sessions_by_type': sessions_by_type,
-        'recent_sessions': recent_sessions,
-        'sessions_by_horse': sessions_by_horse,
-        'month_names': month_names,
-        'month_counts': month_counts,
-        'avg_duration': avg_duration,
-        'avg_cost': avg_cost,
-        'sessions_per_horse': sessions_per_horse,
-        'start_date': start_date_str,
-        'end_date': end_date_str,
-        'sessions_dates': json.dumps(sessions_dates),
-    })
+    data['start_date'] = start_date_str
+    data['end_date'] = end_date_str
+
+    return render(request, "training/dashboard.html", data)
 
 
 @login_required

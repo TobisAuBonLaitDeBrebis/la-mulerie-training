@@ -28,4 +28,7 @@ urlpatterns = [
     # Endpoints seances (lecture + creation idempotente)
     path('sessions/', views.TrainingSessionListView.as_view(), name='session-list'),
     path('sessions/<int:pk>/', views.TrainingSessionDetailView.as_view(), name='session-detail'),
+
+    # Endpoint dashboard
+    path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
 ]

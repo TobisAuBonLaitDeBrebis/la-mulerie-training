@@ -1,4 +1,6 @@
 from django.db import IntegrityError, transaction
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -7,7 +9,23 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework import generics
 
 from training.models import Horse, TrainingSession
-from .serializers import UserSerializer, HorseSerializer, TrainingSessionSerializer, payload_matches
+from training.services import build_dashboard_data
+from .serializers import (
+    ApiErrorSerializer,
+    DashboardFilterSerializer,
+    DashboardSerializer,
+    HorseSerializer,
+    IdempotencyConflictSerializer,
+    TrainingSessionSerializer,
+    UserSerializer,
+    payload_matches,
+)
+
+ERROR_RESPONSES = {
+    '400': OpenApiResponse(ApiErrorSerializer, description='Requete invalide.'),
+    '401': OpenApiResponse(ApiErrorSerializer, description='Authentification requise.'),
+    '404': OpenApiResponse(ApiErrorSerializer, description='Ressource inexistante ou non autorisee.'),
+}
 
 
 class MeView(APIView):
@@ -17,7 +35,8 @@ class MeView(APIView):
     """
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
-    
+
+    @extend_schema(responses={200: UserSerializer, **ERROR_RESPONSES})
     def get(self, request, *args, **kwargs):
         user = request.user
         serializer = UserSerializer(user)
@@ -33,6 +52,10 @@ class HorseListView(generics.ListAPIView):
     """
     serializer_class = HorseSerializer
 
+    @extend_schema(responses={200: HorseSerializer(many=True), **ERROR_RESPONSES})
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
     def get_queryset(self):
         return Horse.objects.filter(proprietaire=self.request.user).order_by('id')
 
@@ -45,6 +68,10 @@ class HorseDetailView(generics.RetrieveAPIView):
     renvoie 404 sans reveler son existence.
     """
     serializer_class = HorseSerializer
+
+    @extend_schema(responses={200: HorseSerializer, **ERROR_RESPONSES})
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
         return Horse.objects.filter(proprietaire=self.request.user)
@@ -73,6 +100,44 @@ class TrainingSessionListView(generics.ListCreateAPIView):
             .select_related('cheval')
             .order_by('id')
         )
+
+    @extend_schema(
+        operation_id='listSessions',
+        summary='Liste des seances du cavalier authentifie',
+        responses={
+            200: OpenApiResponse(TrainingSessionSerializer(many=True), description='Liste paginee (20 par page).'),
+            **ERROR_RESPONSES,
+        },
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    @extend_schema(
+        operation_id='createSession',
+        summary='Creation idempotente d une seance',
+        description=(
+            'Creation validee par le serveur. Le cavalier est derive de '
+            'l utilisateur authentifie ; le cheval doit appartenir a l utilisateur.\n\n'
+            '`client_uuid` (obligatoire) est genere par le mobile avant l envoi et '
+            'conserve a l identique lors des retries :\n'
+            '- 201 : premiere creation pour ce couple (cavalier, client_uuid) ;\n'
+            '- 200 : rejeu du meme UUID avec le meme contenu, la seance existante '
+            'est renvoyee sans doublon ;\n'
+            '- 409 : meme UUID avec un contenu different, la seance existante n est '
+            'pas ecrasee ;\n'
+            '- 400 : validation refusee, aucune seance partielle.\n\n'
+            'La contrainte unique (cavalier, client_uuid) en base garantit '
+            'l absence de doublon en cas de collisions concurrentes.'
+        ),
+        responses={
+            201: OpenApiResponse(TrainingSessionSerializer, description='Seance creee.'),
+            200: OpenApiResponse(TrainingSessionSerializer, description='Rejeu idempotent : seance existante renvoyee.'),
+            409: OpenApiResponse(IdempotencyConflictSerializer, description='Conflit : UUID client deja utilise avec un contenu different.'),
+            **ERROR_RESPONSES,
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -130,9 +195,41 @@ class TrainingSessionDetailView(generics.RetrieveAPIView):
     """
     serializer_class = TrainingSessionSerializer
 
+    @extend_schema(responses={200: TrainingSessionSerializer, **ERROR_RESPONSES})
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
     def get_queryset(self):
         return (
             TrainingSession.objects
             .filter(cavalier=self.request.user)
             .select_related('cheval')
         )
+
+
+class DashboardView(APIView):
+    """
+    Endpoint /api/v1/dashboard/ - Indicateurs du tableau de bord mobile.
+
+    Reutilise exactement les calculs du tableau de bord web
+    (training.services.build_dashboard_data). Filtres de periode inclusifs :
+    ?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
+    """
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('start_date', OpenApiTypes.DATE, description='Borne de debut incluse (YYYY-MM-DD).'),
+            OpenApiParameter('end_date', OpenApiTypes.DATE, description='Borne de fin incluse (YYYY-MM-DD).'),
+        ],
+        responses={200: DashboardSerializer, **ERROR_RESPONSES},
+    )
+    def get(self, request, *args, **kwargs):
+        filter_serializer = DashboardFilterSerializer(data=request.query_params)
+        filter_serializer.is_valid(raise_exception=True)
+        start_date = filter_serializer.validated_data.get('start_date')
+        end_date = filter_serializer.validated_data.get('end_date')
+
+        data = build_dashboard_data(request.user, start_date=start_date, end_date=end_date)
+        data['period'] = {'start_date': start_date, 'end_date': end_date}
+
+        output_serializer = DashboardSerializer(data)
+        return Response(output_serializer.data, status=status.HTTP_200_OK)

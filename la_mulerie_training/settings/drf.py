@@ -12,12 +12,15 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
-    
+
     # Permission
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
-    
+
+    # OpenAPI schema generation
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+
     # Pagination
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
@@ -73,4 +76,16 @@ SIMPLE_JWT = {
     # Auth token classes
     'TOKEN_TYPE_CLAIM': 'token_type',
     'JTI_CLAIM': 'jti',
+}
+
+# OpenAPI schema settings (drf-spectacular)
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'La Mulerie Training API',
+    'DESCRIPTION': (
+        'API v1 pour l application mobile La Mulerie Training. '
+        'Unites exposees : `duree` en minutes, `cout` en euros. '
+        'Les dates sont des dates metier locales (YYYY-MM-DD), sans conversion UTC.'
+    ),
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
 }

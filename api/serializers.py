@@ -75,3 +75,90 @@ def payload_matches(session, validated):
         and session.cout == validated.get('cout')
         and (session.notes or None) == (validated.get('notes') or None)
     )
+
+
+class DashboardFilterSerializer(serializers.Serializer):
+    """Filtres de periode acceptes par GET /api/v1/dashboard/ (dates ISO)."""
+    start_date = serializers.DateField(
+        required=False, default=None,
+        help_text="Borne de debut incluse de la periode (YYYY-MM-DD).",
+    )
+    end_date = serializers.DateField(
+        required=False, default=None,
+        help_text="Borne de fin incluse de la periode (YYYY-MM-DD).",
+    )
+
+
+class DashboardPeriodSerializer(serializers.Serializer):
+    """Periode effectivement appliquee (null = toutes les donnees)."""
+    start_date = serializers.DateField(allow_null=True)
+    end_date = serializers.DateField(allow_null=True)
+
+
+class DashboardTypeStatSerializer(serializers.Serializer):
+    """Comptage de seances par type."""
+    type_seance = serializers.CharField()
+    count = serializers.IntegerField()
+    total_duration = serializers.IntegerField(help_text="Duree cumulee en minutes.")
+
+
+class DashboardHorseStatSerializer(serializers.Serializer):
+    """Comptage de seances par equide (tri par duree cumulee decroissante)."""
+    cheval = serializers.CharField(source='cheval__nom')
+    count = serializers.IntegerField()
+    total_duration = serializers.IntegerField(help_text="Duree cumulee en minutes.")
+
+
+class DashboardRecentSessionSerializer(serializers.Serializer):
+    """Resume d'une des 5 dernieres seances."""
+    id = serializers.IntegerField()
+    date = serializers.DateField()
+    type_seance = serializers.CharField()
+    cheval = serializers.CharField(source='cheval.nom')
+    duree = serializers.IntegerField(help_text="Duree en minutes.")
+
+
+class DashboardCalendarEntrySerializer(serializers.Serializer):
+    """Entree du calendrier : une seance datee."""
+    id = serializers.IntegerField()
+    date = serializers.DateField(format='%Y-%m-%d')
+    activity = serializers.CharField()
+
+
+class DashboardSerializer(serializers.Serializer):
+    """Indicateurs du tableau de bord mobile (memes calculs que le web)."""
+    total_sessions = serializers.IntegerField()
+    total_horses = serializers.IntegerField()
+    total_duration = serializers.IntegerField(help_text="Duree cumulee en minutes.")
+    total_cost = serializers.DecimalField(
+        max_digits=10, decimal_places=2, coerce_to_string=False,
+        help_text="Cout cumule en euros.",
+    )
+    avg_duration = serializers.FloatField(help_text="Duree moyenne en minutes (1 decimale).")
+    avg_cost = serializers.DecimalField(
+        max_digits=10, decimal_places=2, coerce_to_string=False,
+        help_text="Cout moyen en euros (2 decimales).",
+    )
+    sessions_per_horse = serializers.FloatField(
+        help_text="Nombre moyen de seances par equide (1 decimale).",
+    )
+    sessions_by_type = DashboardTypeStatSerializer(many=True)
+    sessions_by_horse = DashboardHorseStatSerializer(many=True)
+    month_names = serializers.ListField(child=serializers.CharField())
+    month_counts = serializers.ListField(child=serializers.IntegerField())
+    recent_sessions = DashboardRecentSessionSerializer(many=True)
+    sessions_dates = DashboardCalendarEntrySerializer(many=True)
+    period = DashboardPeriodSerializer()
+
+
+class ApiErrorSerializer(serializers.Serializer):
+    """Enveloppe d'erreur standard produite par api/exceptions.py."""
+    error = serializers.BooleanField()
+    code = serializers.IntegerField()
+    message = serializers.CharField()
+
+
+class IdempotencyConflictSerializer(serializers.Serializer):
+    """Reponse 409 : l'UUID client est deja associe a une seance differente."""
+    detail = serializers.CharField()
+    session_id = serializers.IntegerField()
