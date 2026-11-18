@@ -20,4 +20,8 @@ urlpatterns = [
     
     # Endpoint me
     path('me/', views.MeView.as_view(), name='me'),
+
+    # Endpoints chevaux (lecture seule)
+    path('horses/', views.HorseListView.as_view(), name='horse-list'),
+    path('horses/<int:pk>/', views.HorseDetailView.as_view(), name='horse-detail'),
 ]
