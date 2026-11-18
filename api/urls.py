@@ -24,4 +24,8 @@ urlpatterns = [
     # Endpoints chevaux (lecture seule)
     path('horses/', views.HorseListView.as_view(), name='horse-list'),
     path('horses/<int:pk>/', views.HorseDetailView.as_view(), name='horse-detail'),
+
+    # Endpoints seances (lecture + creation idempotente)
+    path('sessions/', views.TrainingSessionListView.as_view(), name='session-list'),
+    path('sessions/<int:pk>/', views.TrainingSessionDetailView.as_view(), name='session-detail'),
 ]

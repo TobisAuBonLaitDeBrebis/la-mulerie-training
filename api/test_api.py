@@ -1,8 +1,18 @@
-from django.test import TestCase
+import contextlib
+import uuid as uuid_module
+from datetime import date
+from unittest.mock import patch
+
+from django.db import IntegrityError, transaction
+from django.test import TestCase, TransactionTestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework import status
 from django.contrib.auth import get_user_model
+
+from training.models import TrainingSession
+from training.tests.factories import HorseFactory, TrainingSessionFactory, UserFactory
+from api.serializers import TrainingSessionSerializer
 
 User = get_user_model()
 
@@ -120,9 +130,6 @@ class JWTAuthTestCase(TestCase):
         response = self.client.get(reverse('api:me'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['username'], 'jwtuser')
-from datetime import date
-
-from training.tests.factories import HorseFactory, UserFactory
 
 
 class HorseApiTestCase(TestCase):
@@ -247,3 +254,306 @@ class HorseApiTestCase(TestCase):
         horse = HorseFactory(proprietaire=self.user)
         response = self.client.get(reverse('api:horse-detail', args=[horse.id]))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+def session_payload(horse, **overrides):
+    """Payload de creation de seance, surchargable pour les conflits."""
+    payload = {
+        'client_uuid': str(uuid_module.uuid4()),
+        'cheval': horse.id,
+        'date': '2025-11-10',
+        'type_seance': 'dressage',
+        'duree': 45,
+        'cout': '50.00',
+        'notes': 'seance test',
+    }
+    payload.update(overrides)
+    return payload
+
+
+class TrainingSessionApiTestCase(TestCase):
+    """Tests pour les endpoints /api/v1/sessions/ (lecture + creation)."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username='rider', password='riderpass123',
+        )
+        self.other_user = User.objects.create_user(
+            username='otherrider', password='otherpass123',
+        )
+        self.horse = HorseFactory(nom='Morange', proprietaire=self.user)
+        self.other_horse = HorseFactory(nom='Etranger', proprietaire=self.other_user)
+
+    def authenticate(self, user=None):
+        self.client.force_authenticate(user=user or self.user)
+
+    # ---------- Lecture ----------
+
+    def test_list_requires_authentication(self):
+        response = self.client.get(reverse('api:session-list'))
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_detail_requires_authentication(self):
+        session = TrainingSessionFactory(cheval=self.horse, cavalier=self.user)
+        response = self.client.get(reverse('api:session-detail', args=[session.id]))
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_list_returns_only_own_sessions(self):
+        own = TrainingSessionFactory(cheval=self.horse, cavalier=self.user)
+        TrainingSessionFactory(cheval=self.other_horse, cavalier=self.other_user)
+
+        self.authenticate()
+        response = self.client.get(reverse('api:session-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)
+        self.assertEqual(response.data['results'][0]['id'], own.id)
+
+    def test_detail_of_other_user_session_returns_404(self):
+        session = TrainingSessionFactory(cheval=self.other_horse, cavalier=self.other_user)
+        self.authenticate()
+        response = self.client.get(reverse('api:session-detail', args=[session.id]))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_detail_of_own_session_returns_200(self):
+        session = TrainingSessionFactory(cheval=self.horse, cavalier=self.user)
+        self.authenticate()
+        response = self.client.get(reverse('api:session-detail', args=[session.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['cheval'], self.horse.id)
+        self.assertEqual(response.data['type_seance'], session.type_seance)
+
+    # ---------- Creation ----------
+
+    def test_create_returns_201_with_data(self):
+        self.authenticate()
+        payload = session_payload(self.horse)
+        response = self.client.post(reverse('api:session-list'), payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        session = TrainingSession.objects.get(client_uuid=payload['client_uuid'])
+        self.assertEqual(session.cavalier, self.user)
+        self.assertEqual(session.cheval, self.horse)
+        self.assertEqual(session.type_seance, 'dressage')
+        self.assertEqual(str(session.cout), '50.00')
+
+    def test_create_ignores_cavalier_from_payload(self):
+        """Le cavalier est deflecte par le serveur, jamais par le client."""
+        self.authenticate()
+        payload = session_payload(self.horse, cavalier=self.other_user.id)
+        response = self.client.post(reverse('api:session-list'), payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        session = TrainingSession.objects.get(client_uuid=payload['client_uuid'])
+        self.assertEqual(session.cavalier, self.user)
+
+    def test_create_with_inaccessible_horse_refused(self):
+        """Un equide appartenant a un autre utilisateur est refuse (400)."""
+        self.authenticate()
+        payload = session_payload(self.other_horse)
+        response = self.client.post(reverse('api:session-list'), payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(TrainingSession.objects.count(), 0)
+
+    def test_create_with_nonexistent_horse_refused(self):
+        self.authenticate()
+        payload = session_payload(self.horse, cheval=9999)
+        response = self.client.post(reverse('api:session-list'), payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_missing_fields_returns_400_without_partial_session(self):
+        self.authenticate()
+        payload = session_payload(self.horse)
+        del payload['type_seance']
+        response = self.client.post(reverse('api:session-list'), payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(TrainingSession.objects.count(), 0)
+
+    def test_create_with_invalid_client_uuid_refused(self):
+        self.authenticate()
+        payload = session_payload(self.horse, client_uuid='not-a-uuid')
+        response = self.client.post(reverse('api:session-list'), payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(TrainingSession.objects.count(), 0)
+
+    def test_create_missing_client_uuid_refused(self):
+        """Sans UUID client, la creation n'est pas idempotente : elle est refusee."""
+        self.authenticate()
+        payload = session_payload(self.horse)
+        del payload['client_uuid']
+        response = self.client.post(reverse('api:session-list'), payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(TrainingSession.objects.count(), 0)
+
+    def test_create_requires_authentication(self):
+        payload = session_payload(self.horse)
+        response = self.client.post(reverse('api:session-list'), payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(TrainingSession.objects.count(), 0)
+
+    # ---------- Idempotence ----------
+
+    def test_replay_same_uuid_same_payload_returns_existing(self):
+        payload = session_payload(self.horse)
+        self.authenticate()
+        first = self.client.post(reverse('api:session-list'), payload, format='json')
+        self.assertEqual(first.status_code, status.HTTP_201_CREATED)
+
+        second = self.client.post(reverse('api:session-list'), payload, format='json')
+        self.assertEqual(second.status_code, status.HTTP_200_OK)
+        self.assertEqual(second.data['id'], first.data['id'])
+        self.assertEqual(TrainingSession.objects.count(), 1)
+
+    def test_replay_same_uuid_different_payload_returns_409(self):
+        payload = session_payload(self.horse)
+        self.authenticate()
+        first = self.client.post(reverse('api:session-list'), payload, format='json')
+        self.assertEqual(first.status_code, status.HTTP_201_CREATED)
+
+        conflicted = dict(payload, duree=90)
+        second = self.client.post(reverse('api:session-list'), conflicted, format='json')
+        self.assertEqual(second.status_code, status.HTTP_409_CONFLICT)
+
+        # La seance originale n'a pas ete ecrasee
+        session = TrainingSession.objects.get(client_uuid=payload['client_uuid'])
+        self.assertEqual(session.duree, 45)
+        self.assertEqual(TrainingSession.objects.count(), 1)
+
+    def test_same_uuid_from_another_user_is_isolated(self):
+        """Le meme UUID utilise par un autre cavalier ne leak pas la seance d'autrui."""
+        other_horse_own = HorseFactory(proprietaire=self.other_user)
+        payload = session_payload(self.horse)
+        self.authenticate()
+        own_response = self.client.post(reverse('api:session-list'), payload, format='json')
+        self.assertEqual(own_response.status_code, status.HTTP_201_CREATED)
+
+        # Un autre utilisateur rejoue le meme UUID avec son propre cheval
+        self.authenticate(self.other_user)
+        other_payload = dict(
+            session_payload(other_horse_own, client_uuid=payload['client_uuid']),
+            notes='seance autre cavalier',
+        )
+        other_response = self.client.post(reverse('api:session-list'), other_payload, format='json')
+        self.assertEqual(other_response.status_code, status.HTTP_201_CREATED)
+        self.assertNotEqual(other_response.data['id'], own_response.data['id'])
+        self.assertEqual(other_response.data['client_uuid'], payload['client_uuid'])
+        self.assertEqual(TrainingSession.objects.count(), 2)
+
+    def test_web_sessions_without_uuid_remain_allowed(self):
+        """Contrainte unique : plusieurs seances sans client_uuid (web) sont tolerees."""
+        TrainingSessionFactory(cheval=self.horse, cavalier=self.user)
+        TrainingSessionFactory(cheval=self.horse, cavalier=self.user)
+        self.assertEqual(TrainingSession.objects.count(), 2)
+
+    def test_unique_constraint_blocks_duplicate_key(self):
+        """La contrainte en base protege la paire (cavalier, client_uuid)."""
+        uuid_value = uuid_module.uuid4()
+        TrainingSessionFactory(
+            cheval=self.horse, cavalier=self.user, client_uuid=uuid_value,
+        )
+        with self.assertRaises(IntegrityError):
+            TrainingSessionFactory(
+                cheval=self.horse, cavalier=self.user, client_uuid=uuid_value,
+            )
+
+
+class TrainingSessionCollisionTestCase(TransactionTestCase):
+    """
+    Chemin de collision concurrente : la requete perdante recoit la seance
+    qui a gagne la course (200) grace au rattrapage post-IntegrityError.
+    TransactionTestCase pour que la creation "gagnante" soit reellement
+    commitee avant le rollback de la requete perdante.
+    """
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(username='racer', password='racerpass123')
+        self.horse = HorseFactory(proprietaire=self.user)
+
+    def _post_with_simulated_winner(self, payload, winner_type_seance):
+        """
+        Simule deux createurs concurrents : le gagnant commite la seance pour
+        cette cle d'idempotence, puis l'INSERT du perdant echoue sur la
+        contrainte unique. Le bloc atomic de la vue est neutralise pour que la
+        creation du gagnant ne soit pas annulee par le rollback du perdant,
+        comme ce serait le cas avec deux transactions separees.
+        """
+        def simulate_winning_racer(*args, **kwargs):
+            TrainingSession.objects.create(
+                cheval=self.horse,
+                cavalier=self.user,
+                client_uuid=payload['client_uuid'],
+                date=payload['date'],
+                type_seance=winner_type_seance,
+                duree=payload['duree'],
+                cout=payload.get('cout'),
+                notes=payload.get('notes'),
+            )
+            raise IntegrityError('UNIQUE constraint failed: uniq_cavalier_client_uuid')
+
+        with patch.object(TrainingSessionSerializer, 'save', side_effect=simulate_winning_racer), \
+                patch('api.views.transaction.atomic', contextlib.nullcontext):
+            return self.client.post(reverse('api:session-list'), payload, format='json')
+
+    def test_collision_with_same_payload_returns_existing_session(self):
+        self.client.force_authenticate(user=self.user)
+        payload = session_payload(self.horse)
+        response = self._post_with_simulated_winner(payload, payload['type_seance'])
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # exactement une seance pour cette cle, pas de doublon
+        self.assertEqual(
+            TrainingSession.objects.filter(client_uuid=payload['client_uuid']).count(),
+            1,
+        )
+
+    def test_collision_with_different_payload_returns_409(self):
+        self.client.force_authenticate(user=self.user)
+        payload = session_payload(self.horse)
+        response = self._post_with_simulated_winner(payload, 'autre')
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+
+        # la seance gagnante n'a pas ete ecrasee
+        session = TrainingSession.objects.get(client_uuid=payload['client_uuid'])
+        self.assertEqual(session.type_seance, 'autre')
+
+
+class TrainingSessionConcurrencyTestCase(TransactionTestCase):
+    """
+    Verification de la garantie de non-doublon sous creation concurrente.
+
+    Un test threade reel n'est pas fiable sur SQLite en memoire partagee
+    (erreur 'database table is locked' entre deux ecrivains). On verifie
+    donc de facon deterministe que :
+    - la contrainte unique (cavalier, client_uuid) est bien posee en base ;
+    - le chemin post-IntegrityError (Classe TrainingSessionCollisionTestCase)
+      renvoie la seance gagnante sans doublon.
+    """
+
+    def test_two_creations_same_key_use_single_row(self):
+        user = UserFactory(username='concurrent')
+        horse = HorseFactory(proprietaire=user)
+        key = uuid_module.uuid4()
+        payload = dict(
+            session_payload(horse, client_uuid=str(key)),
+            type_seance='dressage',
+        )
+        serializer = TrainingSessionSerializer(data=payload)
+        serializer.is_valid(raise_exception=True)
+
+        with transaction.atomic():
+            serializer.save(cavalier=user)
+
+        with self.assertRaises(IntegrityError):
+            TrainingSession.objects.create(
+                cheval=horse,
+                cavalier=user,
+                client_uuid=key,
+                date=payload['date'],
+                type_seance=payload['type_seance'],
+                duree=payload['duree'],
+            )
+
+        self.assertEqual(
+            TrainingSession.objects.filter(client_uuid=key).count(),
+            1,
+        )
